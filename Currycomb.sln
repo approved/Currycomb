@@ -3,7 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31521.260
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Currycomb", "Currycomb\Currycomb.csproj", "{F86CE1AD-556D-48BD-B39E-725B50BD3E06}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Currycomb-Gateway", "Currycomb-Gateway\Currycomb-Gateway.csproj", "{C9EF547F-1AC1-427F-A50F-B44326FC4820}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Currycomb-AuthService", "Currycomb-AuthService\Currycomb-AuthService.csproj", "{BA313F9C-8D96-4E86-A11E-5C04745758F6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Currycomb-PlayService", "Currycomb-PlayService\Currycomb-PlayService.csproj", "{860BAFFF-A314-4C64-8271-0068F884AB5E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Currycomb-ChatService", "Currycomb-ChatService\Currycomb-ChatService.csproj", "{19E8E18B-78F6-4991-BBE7-8224AA89F129}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -11,10 +17,22 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{F86CE1AD-556D-48BD-B39E-725B50BD3E06}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F86CE1AD-556D-48BD-B39E-725B50BD3E06}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F86CE1AD-556D-48BD-B39E-725B50BD3E06}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F86CE1AD-556D-48BD-B39E-725B50BD3E06}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C9EF547F-1AC1-427F-A50F-B44326FC4820}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C9EF547F-1AC1-427F-A50F-B44326FC4820}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C9EF547F-1AC1-427F-A50F-B44326FC4820}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C9EF547F-1AC1-427F-A50F-B44326FC4820}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BA313F9C-8D96-4E86-A11E-5C04745758F6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BA313F9C-8D96-4E86-A11E-5C04745758F6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BA313F9C-8D96-4E86-A11E-5C04745758F6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BA313F9C-8D96-4E86-A11E-5C04745758F6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{860BAFFF-A314-4C64-8271-0068F884AB5E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{860BAFFF-A314-4C64-8271-0068F884AB5E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{860BAFFF-A314-4C64-8271-0068F884AB5E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{860BAFFF-A314-4C64-8271-0068F884AB5E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{19E8E18B-78F6-4991-BBE7-8224AA89F129}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{19E8E18B-78F6-4991-BBE7-8224AA89F129}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{19E8E18B-78F6-4991-BBE7-8224AA89F129}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{19E8E18B-78F6-4991-BBE7-8224AA89F129}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
