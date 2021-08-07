@@ -11,17 +11,18 @@ namespace Currycomb.Gateway.Network
 
         public string ReadSizedString(int capacity)
         {
-            string str = ReadString();
-            if (str.Length == 0)
+            int length = Read7BitEncodedInt();
+            if (length > capacity)
+            {
+                throw new InvalidDataException($"Length ({length}) exceeded maximum capacity ({capacity})!");
+            }
+
+            if (length == 0)
             {
                 return string.Empty;
             }
-            else if (str.Length <= capacity)
-            {
-                return str;
-            }
 
-            throw new InvalidDataException($"Length ({str.Length}) exceeded maximum capacity ({capacity})!");
+            return new(ReadChars(length));
         }
 
         public ushort ReadPort()
