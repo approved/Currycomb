@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Currycomb_AuthService
+namespace Currycomb.ChatService
 {
     class Program
     {

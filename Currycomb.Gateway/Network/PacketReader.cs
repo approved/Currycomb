@@ -1,0 +1,34 @@
+﻿using System.IO;
+using System.Text;
+
+namespace Currycomb.Gateway.Network
+{
+    public class PacketReader : BinaryReader
+    {
+        public PacketReader(Stream stream) : base(stream) { }
+
+        public PacketReader(Stream stream, Encoding encoding, bool leaveOpen = false) : base(stream, encoding, leaveOpen) { }
+
+        public string ReadSizedString(int capacity)
+        {
+            string str = ReadString();
+            if (str.Length == 0)
+            {
+                return string.Empty;
+            }
+            else if (str.Length <= capacity)
+            {
+                return str;
+            }
+
+            throw new InvalidDataException($"Length ({str.Length}) exceeded maximum capacity ({capacity})!");
+        }
+
+        public ushort ReadPort()
+        {
+            byte high = ReadByte();
+            byte low = ReadByte();
+            return (ushort)(high << 8 | low);
+        }
+    }
+}

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Currycomb_PlayService
+namespace Currycomb.PlayService
 {
     class Program
     {

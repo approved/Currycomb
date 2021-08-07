@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Currycomb_ChatService
+namespace Currycomb.BroadcastService
 {
     class Program
     {
