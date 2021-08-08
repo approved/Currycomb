@@ -1,14 +1,13 @@
-﻿using Currycomb.Gateway.ClientData;
+﻿using System;
+using System.Threading.Tasks;
 using Currycomb.Gateway.Network.Services;
-using Serilog;
-using System;
 
 namespace Currycomb.Gateway.Network
 {
     public class IncomingPacketDispatcher
     {
-        private AuthService _authService;
-        private PlayService _playService;
+        private readonly AuthService _authService;
+        private readonly PlayService _playService;
 
         public IncomingPacketDispatcher(AuthService authService, PlayService playService)
         {
@@ -16,18 +15,15 @@ namespace Currycomb.Gateway.Network
             this._playService = playService;
         }
 
-        public void Dispatch(Guid id, bool isInPlayState, PacketReader reader)
+        public async Task DispatchAsync(Guid id, bool isInPlayState, Memory<byte> data)
         {
-            int packetId = reader.Read7BitEncodedInt();
-            Log.Debug($"Received packet: ClientId {id}, {nameof(isInPlayState)} {isInPlayState}, PacketId {packetId}");
-
             if (isInPlayState)
             {
-                _playService.Handle(id, reader);
+                await _playService.HandleAsync(id, data);
             }
             else
             {
-                _authService.Handle(id, reader);
+                await _authService.HandleAsync(id, data);
             }
         }
     }

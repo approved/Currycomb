@@ -1,4 +1,4 @@
-﻿using Currycomb.Gateway.Extensions;
+﻿using Currycomb.Common.Extensions;
 using Currycomb.Gateway.Network;
 using System;
 using System.IO;
@@ -12,18 +12,17 @@ namespace Currycomb.Gateway.ClientData
         private const int MaximumPacketSize = 0x1FFFFF;
 
         private bool _disposedValue;
+
+        // Connection to a single MC client
         private readonly NetworkStream _stream;
 
         // Assign a temporary Guid until we have a "real" one.
-        // TODO: Let this be reassigned by the service handling auth.
-        private Guid _id = Guid.NewGuid();
+        public Guid Id { get; private set; } = Guid.NewGuid();
 
+        // TODO: Wait for client::changed_state broadcast event before continuing with login
         private bool _isInPlayState = false;
 
-        public ClientConnection(NetworkStream stream)
-        {
-            _stream = stream;
-        }
+        public ClientConnection(NetworkStream stream) => _stream = stream;
 
         public async Task RunAsync(IncomingPacketDispatcher incomingPacketDispatcher)
         {
@@ -34,7 +33,6 @@ namespace Currycomb.Gateway.ClientData
 
             byte[] bytes = new byte[MaximumPacketSize];
             using MemoryStream memory = new(bytes);
-            using PacketReader packetReader = new(memory);
 
             while (true)
             {
@@ -50,29 +48,16 @@ namespace Currycomb.Gateway.ClientData
 
                 for (int i = 0; i < length; i += await _stream.ReadAsync(bytes, i, length - i)) ;
 
-                incomingPacketDispatcher.Dispatch(_id, _isInPlayState, packetReader);
+                await incomingPacketDispatcher.DispatchAsync(Id, _isInPlayState, bytes.AsMemory(0, length));
             }
         }
 
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!_disposedValue)
-            {
-                if (disposing)
-                {
-                    _stream.Dispose();
-                }
+        public void Dispose() => _stream.Dispose();
 
-                // TODO: set large fields to null
-                _disposedValue = true;
-            }
-        }
-
-        public void Dispose()
+        public async Task SendPacketAsync(ReadOnlyMemory<byte> packetWithoutLength)
         {
-            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
-            Dispose(disposing: true);
-            GC.SuppressFinalize(this);
+            await _stream.Write7BitEncodedIntAsync(packetWithoutLength.Length);
+            await _stream.WriteAsync(packetWithoutLength);
         }
     }
 }

@@ -6,17 +6,18 @@ using System.Threading.Tasks;
 using Serilog;
 using Currycomb.Gateway.Network;
 using Currycomb.Gateway.Network.Services;
+using Currycomb.Common.Network;
 
 namespace Currycomb.Gateway
 {
     public class GatewayServer
     {
-        private static string LogFileName = $"logs/gateway_{DateTime.Now:yyyy-MM-dd-HH-mm-ss}_{Environment.ProcessId}.txt";
+        private static readonly string LogFileName = $"logs/gateway/gateway_{DateTime.Now:yyyy-MM-dd-HH-mm-ss}_{Environment.ProcessId}.txt";
 
         private Thread InputThread;
         public bool ShuttingDown;
 
-        public static async Task Main(string[] args)
+        public static async Task Main()
         {
             Log.Logger = new LoggerConfiguration()
                    .MinimumLevel.Verbose()
@@ -43,16 +44,25 @@ namespace Currycomb.Gateway
             // Open a listener on port 25565 (default MC port)
             TcpListener listener = new(IPAddress.Any, 25565);
 
-            AuthService authService = new();
+            using TcpClient authClient = new TcpClient();
+            await authClient.ConnectAsync("localhost", 10001);
+
+            using WrappedPacketStream authStream = new(authClient.GetStream());
+            // using WrappedPacketStream playStream = new(playClient.GetStream());
+
+            AuthService authService = new(authStream);
             PlayService playService = new();
 
             IncomingPacketDispatcher incomingPacketDispatcher = new(authService, playService);
 
-            await ServerListener.StartListener(listener, incomingPacketDispatcher);
+            await Task.WhenAll(
+                ServerListener.StartListener(listener, incomingPacketDispatcher, authStream),
+                authStream.RunAsync()
+            );
         }
 
         private void ProcessInput()
-        {
+        {   
             string input;
             do
             {

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Currycomb.Common.Network
+namespace Currycomb.Common.Network.Broadcast
 {
     public enum EventType
     {
@@ -11,7 +11,7 @@ namespace Currycomb.Common.Network
 
     public static class EventTypeExtensions
     {
-        public static string ToString(this EventType @event) => @event switch
+        public static string ToSubject(this EventType @event) => @event switch
         {
             EventType.ChangedState => "client::changed_state",
             EventType.ChangedId => "client::changed_id",

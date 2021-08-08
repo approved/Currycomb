@@ -1,15 +1,24 @@
-﻿using Serilog;
+﻿using Currycomb.Common.Network;
+using Serilog;
 using System;
+using System.Threading.Tasks;
 
 namespace Currycomb.Gateway.Network.Services
 {
-    public class AuthService
+    public class AuthService : IDisposable
     {
-        public void Handle(Guid id, PacketReader reader)
+        private WrappedPacketStream PacketStream;
+        public AuthService(WrappedPacketStream stream) => PacketStream = stream;
+
+        public async Task HandleAsync(Guid id, Memory<byte> data)
         {
             Log.Warning($"{id} attempting to complete handshake");
 
-            // TODO: Broadcast Event Server
+            await PacketStream.SendWaitAsync(new WrappedPacket(id, data));
+
+            Log.Information($"{id} sent packet to AuthService");
         }
+
+        public void Dispose() => PacketStream.Dispose();
     }
 }
