@@ -11,8 +11,6 @@ namespace Currycomb.Gateway.ClientData
     {
         private const int MaximumPacketSize = 0x1FFFFF;
 
-        private bool _disposedValue;
-
         // Connection to a single MC client
         private readonly NetworkStream _stream;
 
@@ -26,11 +24,6 @@ namespace Currycomb.Gateway.ClientData
 
         public async Task RunAsync(IncomingPacketDispatcher incomingPacketDispatcher)
         {
-            if (_disposedValue)
-            {
-                throw new ObjectDisposedException(nameof(ClientConnection));
-            }
-
             byte[] bytes = new byte[MaximumPacketSize];
             using MemoryStream memory = new(bytes);
 

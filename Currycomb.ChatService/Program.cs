@@ -1,4 +1,5 @@
 ﻿using System;
+using Serilog;
 
 namespace Currycomb.ChatService
 {
@@ -6,7 +7,7 @@ namespace Currycomb.ChatService
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Hello World!");
+            Log.Information("Hello World!");
         }
     }
 }

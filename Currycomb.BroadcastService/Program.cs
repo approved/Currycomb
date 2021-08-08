@@ -7,6 +7,8 @@ using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 
+using Serilog;
+
 namespace Currycomb.BroadcastService
 {
     public class Program
@@ -24,7 +26,7 @@ namespace Currycomb.BroadcastService
             listener.Prefixes.Add("http://127.0.0.1:10002/");
             listener.Start();
 
-            Console.WriteLine("Started listener");
+            Log.Information("Started listener");
 
             CancellationTokenSource cts = new();
 
@@ -39,7 +41,7 @@ namespace Currycomb.BroadcastService
                 while (!ct.IsCancellationRequested)
                 {
                     Event ev = await eventChannel.Reader.ReadAsync(ct);
-                    Console.WriteLine($"Handling event: {ev}");
+                    Log.Information($"Handling event: {ev}");
 
                     switch (ev)
                     {
@@ -50,7 +52,7 @@ namespace Currycomb.BroadcastService
                             connected.Remove(e.WebSocket);
                             break;
                         case BroadcastEvent e:
-                            Console.WriteLine("Broadcasting: " + Encoding.UTF8.GetString(e.EventData));
+                            Log.Information("Broadcasting: " + Encoding.UTF8.GetString(e.EventData));
                             byte[] bytes = e.EventData;
                             foreach (WebSocket ws in connected)
                             {
@@ -106,7 +108,7 @@ namespace Currycomb.BroadcastService
                 }
             });
 
-            Console.WriteLine("Initialized.");
+            Log.Information("Initialized.");
             await Task.WhenAll(incomingHandler, eventHandler);
         }
 

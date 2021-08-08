@@ -37,7 +37,7 @@ namespace Currycomb.Gateway
 
                     dropClientTask ??= Task.WhenAny(clientTaskList);
 
-                    Console.WriteLine("Awaiting a task.");
+                    Log.Information("Awaiting a task.");
                     Task completed = await Task.WhenAny(
                         // Handle disconnecting clients
                         dropClientTask,
@@ -48,7 +48,7 @@ namespace Currycomb.Gateway
                         authPacketTask
                     );
 
-                    Console.WriteLine($"A task finished: {completed}");
+                    Log.Information($"A task finished: {completed}");
 
                     if (completed == newClientTask)
                     {
@@ -78,9 +78,9 @@ namespace Currycomb.Gateway
                     }
                     else if (completed == authPacketTask)
                     {
-                        Console.WriteLine("Received packet");
+                        Log.Information("Received packet");
                         WrappedPacket packet = await authPacketTask;
-                        Console.WriteLine("Received packet for " + packet.ClientId);
+                        Log.Information("Received packet for " + packet.ClientId);
 
                         if (!clientDict.TryGetValue(packet.ClientId, out var client))
                         {

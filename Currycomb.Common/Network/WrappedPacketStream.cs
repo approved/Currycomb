@@ -1,4 +1,5 @@
 using Currycomb.Common.Extensions;
+using Serilog;
 using System;
 using System.Collections.Concurrent;
 using System.IO;
@@ -30,7 +31,7 @@ namespace Currycomb.Common.Network
             {
                 // TODO: Handle errors
 
-                Console.WriteLine("Waiting for incoming packet");
+                Log.Information("Waiting for incoming packet");
 
                 await _stream.ReadAsync(metaBuffer, 0, 1);
                 byte meta = metaBuffer[0];
@@ -41,7 +42,7 @@ namespace Currycomb.Common.Network
                     byte ackVal = (byte)_stream.ReadByte();
                     Guid ackGuid = new Guid(ackBuffer);
 
-                    Console.WriteLine($"ACK for packet received: {ackGuid}");
+                    Log.Information($"ACK for packet received: {ackGuid}");
 
                     if (!_blocking.TryRemove(ackGuid, out var tcs) || !tcs.TrySetResult(ackVal))
                     {
@@ -51,16 +52,18 @@ namespace Currycomb.Common.Network
                     continue;
                 }
 
-                Console.WriteLine($"Reading incoming wrapped packet");
+                Log.Information($"Reading incoming wrapped packet");
                 Guid? ack = (meta & META_ACK_REQ) != 0 ? await _stream.ReadGuidAsync() : null;
+
+                Log.Information($"Reading incoming wrapped packet data: {ack}");
                 await _queuedPackets.Writer.WriteAsync(new WrappedPacketContainer(ack, await WrappedPacket.ReadAsync(_stream)));
-                Console.WriteLine($"Queued incoming wrapped packet");
+                Log.Information($"Queued incoming wrapped packet");
             }
         }
 
         public async Task<byte> SendWaitAsync(WrappedPacket packet)
         {
-            Console.WriteLine($"Sending awaited packet: {packet}");
+            Log.Information($"Sending awaited packet: {packet}");
             _stream.WriteByte(META_ACK_REQ);
 
             Guid id = Guid.NewGuid();
@@ -74,9 +77,9 @@ namespace Currycomb.Common.Network
                 throw new InvalidOperationException("Attempted to send packet with a Guid that is already being awaited.");
             }
 
-            Console.WriteLine($"Waiting for ACK for packet: {packet}");
+            Log.Information($"Waiting for ACK for packet: {packet}");
             byte b = await tcs.Task;
-            Console.WriteLine($"Received ACK for packet: {packet}");
+            Log.Information($"Received ACK for packet: {packet}");
 
             return b;
         }
@@ -89,7 +92,7 @@ namespace Currycomb.Common.Network
 
         public async Task SendAckAsync(Guid ack, byte data = 255)
         {
-            Console.WriteLine($"Writing ACK for {ack}");
+            Log.Information($"Writing ACK for {ack}");
 
             _stream.WriteByte(META_ACK_RES);
             await _stream.WriteAsync(ack);
@@ -107,11 +110,11 @@ namespace Currycomb.Common.Network
         public async Task<WrappedPacketContainer> ReadAsync(bool autoAck = false, CancellationToken ct = default)
         {
             WrappedPacketContainer packet = await _queuedPackets.Reader.ReadAsync(ct);
-            Console.WriteLine($"Dequeued packet: {packet}");
+            Log.Information($"Dequeued packet: {packet}");
 
             if (!autoAck || !packet.AckGuid.HasValue)
             {
-                Console.WriteLine($"Returning dequeued packet.");
+                Log.Information($"Returning dequeued packet.");
                 return packet;
             }
 
@@ -126,7 +129,7 @@ namespace Currycomb.Common.Network
 
             await SendAckAsync(pktc);
 
-            Console.WriteLine("Returning packet data.");
+            Log.Information("Returning packet data.");
             return pkt;
         }
 
