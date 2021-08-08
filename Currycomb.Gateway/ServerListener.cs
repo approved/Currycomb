@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Threading.Tasks;
@@ -89,9 +89,9 @@ namespace Currycomb.Gateway
 
                         Log.Information($"Forwarding packet to {packet.ClientId}.");
                         await client.SendPacketAsync(packet.Packet);
-                    }
 
-                    authPacketTask = null;
+                        authPacketTask = null;
+                    }
                 }
             }
             catch (Exception ex)
