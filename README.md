@@ -1,6 +1,6 @@
 # Currycomb
 
- A .NET 6 Minecraft Server
+ A .NET 5 Minecraft Server
 
 Ports:
 
