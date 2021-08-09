@@ -14,9 +14,6 @@ namespace Currycomb.Gateway
     {
         private static readonly string LogFileName = $"logs/gateway/gateway_{DateTime.Now:yyyy-MM-dd-HH-mm-ss}_{Environment.ProcessId}.txt";
 
-        private Thread InputThread;
-        public bool ShuttingDown;
-
         public static async Task Main()
         {
             Log.Logger = new LoggerConfiguration()
@@ -26,16 +23,6 @@ namespace Currycomb.Gateway
                    .CreateLogger();
 
             await new GatewayServer().Run();
-        }
-
-        public GatewayServer()
-        {
-            InputThread = new Thread(ProcessInput)
-            {
-                Name = "CommandInputThread",
-                IsBackground = true,
-            };
-            InputThread.Start();
         }
 
         private async Task Run()
@@ -53,22 +40,12 @@ namespace Currycomb.Gateway
             AuthService authService = new(authStream);
             PlayService playService = new();
 
-            IncomingPacketDispatcher incomingPacketDispatcher = new(authService, playService);
+            IncomingPacketRouter c2sPackets = new(authService, playService);
 
             await Task.WhenAll(
-                ServerListener.StartListener(listener, incomingPacketDispatcher, authStream),
+                ServerListener.StartListener(listener, c2sPackets, authStream),
                 authStream.RunAsync()
             );
-        }
-
-        private void ProcessInput()
-        {   
-            string input;
-            do
-            {
-                input = Console.ReadLine() ?? throw new NullReferenceException("Stdin returned null string");
-            }
-            while (!ShuttingDown || input.ToLower() == "quit");
         }
     }
 }

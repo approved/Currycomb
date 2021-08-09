@@ -22,7 +22,7 @@ namespace Currycomb.Gateway.ClientData
 
         public ClientConnection(NetworkStream stream) => _stream = stream;
 
-        public async Task RunAsync(IncomingPacketDispatcher incomingPacketDispatcher)
+        public async Task RunAsync(IncomingPacketRouter incomingPacketDispatcher)
         {
             byte[] bytes = new byte[MaximumPacketSize];
             using MemoryStream memory = new(bytes);
@@ -47,10 +47,7 @@ namespace Currycomb.Gateway.ClientData
 
         public void Dispose() => _stream.Dispose();
 
-        public async Task SendPacketAsync(ReadOnlyMemory<byte> packetWithoutLength)
-        {
-            await _stream.Write7BitEncodedIntAsync(packetWithoutLength.Length);
-            await _stream.WriteAsync(packetWithoutLength);
-        }
+        public ValueTask SendPacketAsync(ReadOnlyMemory<byte> packetWithoutLength)
+            => _stream.WriteAsync(packetWithoutLength);
     }
 }

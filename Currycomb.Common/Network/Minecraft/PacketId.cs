@@ -3,8 +3,8 @@ namespace Currycomb.Common.Network.Minecraft
     public enum PacketId : uint
     {
 #pragma warning disable format // @formatter:off
-        // Bit 32      = Client / Server bound
-        // Bit 30 & 31 = State
+        // Bit 31      = Client / Server bound
+        // Bit 29 & 30 = State
 
         // Handshake
         Handshake  = 0x00 | BoundTo.Server | State.Handshake,
@@ -33,7 +33,7 @@ namespace Currycomb.Common.Network.Minecraft
     public static class PacketIdExt
     {
         public static PacketId FromRaw(BoundTo bound, State state, uint id) => (PacketId)((uint)bound | (uint)state | id);
-        public static uint ToRaw(this PacketId id) => (uint)id & 0x1FFFFFFF;
+        public static uint ToRaw(this PacketId id) => (uint)id & 0b00011111111111111111111111111111;
 
         public static BoundTo BoundTo(this PacketId id) => (BoundTo)((uint)id & 0x80000000);
         public static State State(this PacketId id) => (State)((uint)id & 0x60000000);

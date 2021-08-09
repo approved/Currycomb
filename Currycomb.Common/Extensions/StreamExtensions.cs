@@ -2,6 +2,7 @@
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
+using Serilog;
 
 namespace Currycomb.Common.Extensions
 {
@@ -126,14 +127,15 @@ namespace Currycomb.Common.Extensions
             return (encoding ?? Encoding.UTF8).GetString(buffer);
         }
 
-        public static async Task WriteStringAsync(this Stream stream, String str, Encoding? encoding = null)
+        public static async Task WriteAsync(this Stream stream, String str, Encoding? encoding = null)
         {
             byte[] bytes = (encoding ?? Encoding.UTF8).GetBytes(str);
+
+            Log.Error($"Writing string: {bytes.Length}");
 
             await stream.Write7BitEncodedIntAsync(bytes.Length);
             await stream.WriteAsync(bytes, 0, bytes.Length);
         }
-
 
         public static async Task<byte[]> ReadBytesAsync(this Stream stream, int length)
         {
@@ -148,5 +150,35 @@ namespace Currycomb.Common.Extensions
 
         public static Task WriteAsync(this Stream stream, Guid guid)
             => stream.WriteAsync(guid.ToByteArray(), 0, 16);
+
+        public static Task WriteAsync(this Stream stream, long value)
+        {
+            byte[] buffer = new byte[8];
+            buffer[0] = (byte)value;
+            buffer[1] = (byte)(value >> 8);
+            buffer[2] = (byte)(value >> 16);
+            buffer[3] = (byte)(value >> 24);
+            buffer[4] = (byte)(value >> 32);
+            buffer[5] = (byte)(value >> 40);
+            buffer[6] = (byte)(value >> 48);
+            buffer[7] = (byte)(value >> 56);
+            return stream.WriteAsync(buffer, 0, 8);
+        }
+
+        public static async Task<long> ReadLongAsync(this Stream stream)
+        {
+            byte[] buffer = await ReadBytesAsync(stream, 8);
+
+            long value = 0;
+            value |= (long)buffer[0];
+            value |= (long)buffer[1] << 8;
+            value |= (long)buffer[2] << 16;
+            value |= (long)buffer[3] << 24;
+            value |= (long)buffer[4] << 32;
+            value |= (long)buffer[5] << 40;
+            value |= (long)buffer[6] << 48;
+            value |= (long)buffer[7] << 56;
+            return value;
+        }
     }
 }

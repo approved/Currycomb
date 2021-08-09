@@ -12,6 +12,7 @@ using Currycomb.Common.Extensions;
 using Currycomb.Common.Network;
 using Currycomb.Common.Network.Broadcast;
 using Currycomb.Common.Network.Minecraft;
+using Currycomb.Common.Network.Minecraft.Packets;
 
 namespace Currycomb.AuthService
 {
@@ -74,28 +75,26 @@ namespace Currycomb.AuthService
                                 await msPacket.CopyToAsync(msFull);
 
                                 await wps.SendAsync(new WrappedPacket(wrapped.ClientId, msFull.ToArray()));
-                                Log.Information("Replied to PLS");
+                                Log.Information("Replied to PacketLoginStart");
 
                                 break;
                             }
                         case PacketRequest pkt:
                             {
-
                                 await wps.SendAckAsync(wpkt);
 
-                                PacketResponse pktRes = new("{\r\n    \"version\": {\r\n        \"name\": \"1.8.7\",\r\n        \"protocol\": 47\r\n    },\r\n    \"players\": {\r\n        \"max\": 100,\r\n        \"online\": 5,\r\n        \"sample\": [\r\n            {\r\n                \"name\": \"thinkofdeath\",\r\n                \"id\": \"4566e69f-c907-48ee-8d71-d7ba5aa00d20\"\r\n            }\r\n        ]\r\n    },\r\n    \"description\": {\r\n        \"text\": \"Hello world\"\r\n    }\r\n}");
+                                PacketResponse pktRes = new("{\"version\":{\"name\": \"1.17.1\",\"protocol\": 756},\"players\":{\"max\":100,\"online\":5},\"description\":{\"text\":\"Hello world\"}}");
 
-                                // TODO: Very inefficient, avoid triple clone for the data
-                                using MemoryStream msPacket = new();
-                                await pktRes.WriteAsync(msPacket);
+                                Memory<byte> pktBytes = await pktRes.ToBytes(PacketId.Response);
+                                await wps.SendAsync(new WrappedPacket(wrapped.ClientId, pktBytes));
+                                Log.Information("Replied to PacketRequest");
 
-                                using MemoryStream msFull = new();
-                                await msFull.Write7BitEncodedIntAsync((int)msPacket.Length);
-                                await msPacket.CopyToAsync(msFull);
-
-                                await wps.SendAsync(new WrappedPacket(wrapped.ClientId, msFull.ToArray()));
-                                Log.Information("Replied to PLS");
-
+                                break;
+                            }
+                        case PacketPing pkt:
+                            {
+                                await wps.SendAckAsync(wpkt);
+                                await wps.SendAsync(new WrappedPacket(wrapped.ClientId, await new PacketPong(pkt.Timestamp).ToBytes(PacketId.Pong)));
                                 break;
                             }
                         default:

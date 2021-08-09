@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Threading.Tasks;
@@ -11,8 +11,10 @@ namespace Currycomb.Gateway
 {
     public class ServerListener
     {
-        internal static async Task StartListener(TcpListener listener, IncomingPacketDispatcher incomingPacketDispatcher, WrappedPacketStream authStream)
+        internal static async Task StartListener(TcpListener listener, IncomingPacketRouter c2sPacketRouter, WrappedPacketStream authStream)
         {
+            listener.Start();
+
             List<Task> clientTaskList = new()
             {
                 new TaskCompletionSource().Task
@@ -20,7 +22,6 @@ namespace Currycomb.Gateway
 
             Dictionary<Guid, ClientConnection> clientDict = new();
 
-            listener.Start();
             try
             {
                 Task<TcpClient>? newClientTask = null;
@@ -37,6 +38,7 @@ namespace Currycomb.Gateway
 
                     dropClientTask ??= Task.WhenAny(clientTaskList);
 
+
                     Log.Information("Awaiting a task.");
                     Task completed = await Task.WhenAny(
                         // Handle disconnecting clients
@@ -48,27 +50,20 @@ namespace Currycomb.Gateway
                         authPacketTask
                     );
 
-                    Log.Information($"A task finished: {completed}");
-
                     if (completed == newClientTask)
                     {
-                        /*
-                         * TODO: Comment
-                         */
                         Log.Information("Handling incoming client");
                         TcpClient client = await newClientTask;
                         ClientConnection clientCon = new(client.GetStream());
 
                         clientDict.Add(clientCon.Id, clientCon);
-                        clientTaskList.Add(clientCon.RunAsync(incomingPacketDispatcher));
+                        clientTaskList.Add(clientCon.RunAsync(c2sPacketRouter));
 
                         newClientTask = null;
                     }
                     else if (completed == dropClientTask)
                     {
-                        /*
-                         * TODO: Comment
-                         */
+                        Log.Information("Handling dropped client");
                         clientTaskList.Remove(await dropClientTask);
 
                         // TODO: Remove the client from the client dict
@@ -91,6 +86,10 @@ namespace Currycomb.Gateway
                         await client.SendPacketAsync(packet.Packet);
 
                         authPacketTask = null;
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException("Unknown task completed?!");
                     }
                 }
             }
