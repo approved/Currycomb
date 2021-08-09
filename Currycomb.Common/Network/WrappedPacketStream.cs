@@ -13,11 +13,13 @@ namespace Currycomb.Common.Network
 {
     public class WrappedPacketStream : IDisposable
     {
-        static ILogger log = Log.ForContext<WrappedPacketStream>();
+        private readonly static ILogger log = Log.ForContext<WrappedPacketStream>();
 
         // First byte sent for each packet is meta byte
         const byte META_ACK_REQ = 0b00000001; // ACK required
         const byte META_ACK_RES = 0b00000010; // ACK response
+
+        const byte META_INT_PKT = 0b00000100; // Paylod is Internal Packet - Not Minecraft
 
         Stream _outputStream;
         RecyclableMemoryStreamManager _msManager;
@@ -71,9 +73,10 @@ namespace Currycomb.Common.Network
 
                 log.Information($"Reading incoming wrapped packet");
                 Guid? ack = (meta & META_ACK_REQ) != 0 ? await _outputStream.ReadGuidAsync() : null;
+                bool isInternalPacket = (meta & META_INT_PKT) != 0;
 
                 log.Information($"Reading incoming wrapped packet data: {ack}");
-                await _queuedPackets.Writer.WriteAsync(new WrappedPacketContainer(ack, await WrappedPacket.ReadAsync(_outputStream)));
+                await _queuedPackets.Writer.WriteAsync(new WrappedPacketContainer(ack, await WrappedPacket.ReadAsync(_outputStream), isInternalPacket));
                 log.Information($"Queued incoming wrapped packet");
             }
         }
@@ -119,9 +122,9 @@ namespace Currycomb.Common.Network
                 writer.Write(data);
             });
 
-        public async Task SendAckAsync(WrappedPacketContainer packet, byte data = 255)
+        public async Task SendAckAsync(WrappedPacketContainer pktc, byte data = 255)
         {
-            if (packet.AckGuid is Guid id)
+            if (pktc.AckGuid is Guid id)
             {
                 await SendAckAsync(id, data);
             }
@@ -129,17 +132,17 @@ namespace Currycomb.Common.Network
 
         public async Task<WrappedPacketContainer> ReadAsync(bool autoAck = false, CancellationToken ct = default)
         {
-            WrappedPacketContainer packet = await _queuedPackets.Reader.ReadAsync(ct);
-            log.Information($"Dequeued packet: {packet}");
+            WrappedPacketContainer pktc = await _queuedPackets.Reader.ReadAsync(ct);
+            log.Information($"Dequeued packet: {pktc}");
 
-            if (!autoAck || !packet.AckGuid.HasValue)
+            if (!autoAck || !pktc.AckGuid.HasValue)
             {
                 log.Information($"Returning dequeued packet.");
-                return packet;
+                return pktc;
             }
 
-            await SendAckAsync(packet.AckGuid.Value);
-            return packet with { AckGuid = null };
+            await SendAckAsync(pktc.AckGuid.Value);
+            return pktc with { AckGuid = null };
         }
 
         public async Task<WrappedPacket> ReadAutoAckAsync(CancellationToken ct = default)

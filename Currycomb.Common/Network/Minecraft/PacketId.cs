@@ -32,6 +32,11 @@ namespace Currycomb.Common.Network.Minecraft
         Ping     = 0x01 | BoundTo.Server | State.Status,
         Pong     = 0x01 | BoundTo.Client | State.Status,
 
+        // Play
+        JoinGame             = 0x26 | BoundTo.Client | State.Play,
+        PacketPlayerPosition = 0x38 | BoundTo.Client | State.Play,
+        PacketSpawnPosition  = 0x4B | BoundTo.Client | State.Play,
+
 #pragma warning restore format // @formatter:on
     }
 

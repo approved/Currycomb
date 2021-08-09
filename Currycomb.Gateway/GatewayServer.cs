@@ -31,14 +31,17 @@ namespace Currycomb.Gateway
             // Open a listener on port 25565 (default MC port)
             TcpListener listener = new(IPAddress.Any, 25565);
 
-            using TcpClient authClient = new TcpClient();
+            using TcpClient authClient = new();
             await authClient.ConnectAsync("localhost", 10001);
 
+            using TcpClient playClient = new();
+            await playClient.ConnectAsync("localhost", 10002);
+
             using WrappedPacketStream authStream = new(authClient.GetStream());
-            // using WrappedPacketStream playStream = new(playClient.GetStream());
+            using WrappedPacketStream playStream = new(playClient.GetStream());
 
             AuthService authService = new(authStream);
-            PlayService playService = new();
+            PlayService playService = new(playStream);
 
             PacketServiceRouter c2sPackets = new(authService, playService);
 
