@@ -22,7 +22,7 @@ namespace Currycomb.AuthService
         {
             ConcurrentDictionary<Guid, State> ClientState = new();
 
-            AuthPacketHandler aph = new AuthPacketHandler();
+            AuthPacketHandler aph = new();
             PacketRouter<Context> router = aph.Router;
 
             try
@@ -36,7 +36,7 @@ namespace Currycomb.AuthService
 
                     using MemoryStream memoryStream = new(wrapped.GetOrCreatePacketByteArray(), false);
 
-                    var context = new Context(wrapped.ClientId, ClientState, wps, eventSocket);
+                    Context context = new(wrapped.ClientId, ClientState, wps, eventSocket);
                     await router.HandlePacketAsync(context, memoryStream, (uint)wrapped.Data.Length);
                     await wps.SendAckAsync(wpkt);
                 }
@@ -61,7 +61,7 @@ namespace Currycomb.AuthService
             ClientWebSocket eventSocket = new();
 
             Log.Information("Connecting to BroadcastService");
-            await eventSocket.ConnectAsync(new Uri("ws://127.0.0.1:10002/"), ct);
+            await eventSocket.ConnectAsync(new("ws://127.0.0.1:10002/"), ct);
 
             Log.Information("Connected, starting listener");
             TcpListener listener = new(IPAddress.Any, 10001);
@@ -74,8 +74,8 @@ namespace Currycomb.AuthService
                 using TcpClient client = await listener.AcceptTcpClientAsync();
                 Log.Information("Received client");
 
-                WrappedPacketStream wps = new WrappedPacketStream(client.GetStream(), MsManager);
-                CancellationTokenSource wpsCts = new CancellationTokenSource();
+                WrappedPacketStream wps = new(client.GetStream(), MsManager);
+                CancellationTokenSource wpsCts = new();
                 Task wpsTask = wps.RunAsync(wpsCts.Token);
 
                 await HandleWrappedPacketStream(eventSocket, wps);
