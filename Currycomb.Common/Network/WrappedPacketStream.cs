@@ -1,6 +1,8 @@
 using Currycomb.Common.Extensions;
+using Microsoft.IO;
 using Serilog;
 using System;
+using System.Buffers;
 using System.Collections.Concurrent;
 using System.IO;
 using System.Threading;
@@ -17,12 +19,25 @@ namespace Currycomb.Common.Network
         const byte META_ACK_REQ = 0b00000001; // ACK required
         const byte META_ACK_RES = 0b00000010; // ACK response
 
-        Stream _stream;
+        Stream _outputStream;
+        RecyclableMemoryStreamManager _msManager;
 
         ConcurrentDictionary<Guid, TaskCompletionSource<byte>> _blocking = new();
         Channel<WrappedPacketContainer> _queuedPackets = Channel.CreateUnbounded<WrappedPacketContainer>();
 
-        public WrappedPacketStream(Stream stream) => _stream = stream;
+        public WrappedPacketStream(Stream stream, RecyclableMemoryStreamManager? msManager = null)
+            => (_outputStream, _msManager) = (stream, msManager ?? new());
+
+        private MemoryStream GetMemoryStream() => _msManager.GetStream("WrappedPacketStream");
+        private BinaryWriter GetBinaryWriter() => new(GetMemoryStream());
+
+        private async Task WritePacketAsync(Action<BinaryWriter> action)
+        {
+            using var writer = GetBinaryWriter();
+            action(writer);
+            writer.BaseStream.Position = 0;
+            await writer.BaseStream.CopyToAsync(_outputStream);
+        }
 
         public async Task RunAsync(CancellationToken ct = default)
         {
@@ -35,13 +50,13 @@ namespace Currycomb.Common.Network
 
                 log.Information("Waiting for incoming packet");
 
-                await _stream.ReadAsync(metaBuffer, 0, 1);
+                await _outputStream.ReadAsync(metaBuffer, 0, 1);
                 byte meta = metaBuffer[0];
 
                 if ((meta & META_ACK_RES) != 0)
                 {
-                    await _stream.ReadAsync(ackBuffer, 0, 16);
-                    byte ackVal = (byte)_stream.ReadByte();
+                    await _outputStream.ReadAsync(ackBuffer, 0, 16);
+                    byte ackVal = (byte)_outputStream.ReadByte();
                     Guid ackGuid = new Guid(ackBuffer);
 
                     log.Information($"ACK for packet received: {ackGuid}");
@@ -55,10 +70,10 @@ namespace Currycomb.Common.Network
                 }
 
                 log.Information($"Reading incoming wrapped packet");
-                Guid? ack = (meta & META_ACK_REQ) != 0 ? await _stream.ReadGuidAsync() : null;
+                Guid? ack = (meta & META_ACK_REQ) != 0 ? await _outputStream.ReadGuidAsync() : null;
 
                 log.Information($"Reading incoming wrapped packet data: {ack}");
-                await _queuedPackets.Writer.WriteAsync(new WrappedPacketContainer(ack, await WrappedPacket.ReadAsync(_stream)));
+                await _queuedPackets.Writer.WriteAsync(new WrappedPacketContainer(ack, await WrappedPacket.ReadAsync(_outputStream)));
                 log.Information($"Queued incoming wrapped packet");
             }
         }
@@ -66,12 +81,15 @@ namespace Currycomb.Common.Network
         public async Task<byte> SendWaitAsync(WrappedPacket packet)
         {
             log.Information($"Sending awaited packet: {packet}");
-            _stream.WriteByte(META_ACK_REQ);
 
             Guid id = Guid.NewGuid();
 
-            await _stream.WriteAsync(id.ToByteArray());
-            await packet.WriteAsync(_stream);
+            await WritePacketAsync(writer =>
+            {
+                writer.Write(META_ACK_REQ);
+                writer.Write(id.ToByteArray());
+                packet.WriteTo(writer);
+            });
 
             TaskCompletionSource<byte> tcs = new();
             if (!_blocking.TryAdd(id, tcs))
@@ -87,19 +105,19 @@ namespace Currycomb.Common.Network
         }
 
         public Task SendAsync(WrappedPacket packet)
-        {
-            _stream.WriteByte(0);
-            return packet.WriteAsync(_stream);
-        }
+            => WritePacketAsync(writer =>
+            {
+                writer.Write((byte)0);
+                packet.WriteTo(writer);
+            });
 
-        public async Task SendAckAsync(Guid ack, byte data = 255)
-        {
-            log.Information($"Writing ACK for {ack}");
-
-            _stream.WriteByte(META_ACK_RES);
-            await _stream.WriteAsync(ack);
-            _stream.WriteByte(data);
-        }
+        public Task SendAckAsync(Guid ack, byte data = 255)
+            => WritePacketAsync(writer =>
+            {
+                writer.Write(META_ACK_RES);
+                writer.Write(ack.ToByteArray());
+                writer.Write(data);
+            });
 
         public async Task SendAckAsync(WrappedPacketContainer packet, byte data = 255)
         {
@@ -135,6 +153,6 @@ namespace Currycomb.Common.Network
             return pkt;
         }
 
-        public void Dispose() => _stream.Dispose();
+        public void Dispose() => _outputStream.Dispose();
     }
 }

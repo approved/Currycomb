@@ -7,6 +7,6 @@ namespace Currycomb.Common.Network.Minecraft.Packets
     public record PacketPong(long Timestamp) : IPacket
     {
         public static async Task<PacketPing> ReadAsync(Stream stream) => new(await stream.ReadLongAsync());
-        public Task WriteAsync(Stream stream) => stream.WriteAsync(Timestamp);
+        public void Write(BinaryWriter writer) => writer.Write(Timestamp);
     }
 }

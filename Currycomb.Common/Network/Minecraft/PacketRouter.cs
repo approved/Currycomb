@@ -8,24 +8,28 @@ using Serilog;
 
 namespace Currycomb.Common.Network.Minecraft
 {
-
-    public class PacketRouter
+    public interface IPacketRouterContext
     {
-        public delegate Task PacketFunc(Guid clientId, IPacket packet);
+        public State State { get; }
+    }
+
+    public class PacketRouter<TContext> where TContext : IPacketRouterContext
+    {
+        public delegate Task PacketFunc(TContext context, IPacket packet);
 
         public class PacketRouterBuilder
         {
             private readonly Dictionary<PacketId, PacketFunc> Handlers = new();
 
-            public PacketRouterBuilder On<T>(Func<Guid, T, Task> handler) where T : IPacket
+            public PacketRouterBuilder On<T>(Func<TContext, T, Task> handler) where T : IPacket
             {
-                Handlers.Add(PacketIdMap.FromType<T>(), (x, y) => handler(x, (T)y));
+                Handlers.Add(PacketIdMap<T>.Id, (x, y) => handler(x, (T)y));
                 return this;
             }
 
-            public PacketRouterBuilder On<T>(Action<Guid, T> handler) where T : IPacket
+            public PacketRouterBuilder On<T>(Action<TContext, T> handler) where T : IPacket
             {
-                Handlers.Add(PacketIdMap.FromType<T>(), (x, y) =>
+                Handlers.Add(PacketIdMap<T>.Id, (x, y) =>
                 {
                     handler(x, (T)y);
                     return Task.CompletedTask;
@@ -34,7 +38,7 @@ namespace Currycomb.Common.Network.Minecraft
                 return this;
             }
 
-            public PacketRouter Build() => new PacketRouter(Handlers.Select(x => (x.Key, x.Value)).ToArray());
+            public PacketRouter<TContext> Build() => new PacketRouter<TContext>(Handlers.Select(x => (x.Key, x.Value)).ToArray());
         }
 
         public static PacketRouterBuilder New() => new PacketRouterBuilder();
@@ -61,27 +65,21 @@ namespace Currycomb.Common.Network.Minecraft
             }
         }
 
-        public async Task HandlePacketAsync(State state, WrappedPacket wrapped)
-        {
-            using MemoryStream memoryStream = new(wrapped.GetOrCreatePacketByteArray(), false);
-            await HandlePacketAsync(wrapped.ClientId, state, memoryStream, (uint)wrapped.Data.Length);
-        }
-
-        public async Task HandlePacketAsync(Guid client, State state, Stream stream, uint length)
+        public async Task HandlePacketAsync(TContext context, Stream stream, uint length)
         {
             PacketHeader header = await PacketHeader.ReadAsync(stream, length);
             Log.Information($"Read packet header: {header}");
 
-            PacketId id = PacketIdExt.FromRaw(BoundTo.Server, state, header.PacketId);
+            PacketId id = PacketIdExt.FromRaw(BoundTo.Server, context.State, header.PacketId);
             Log.Information($"Read packet id: {id}");
 
             IPacket packet = await PacketReader.ReadAsync(id, stream);
             Log.Information($"Read packet: {packet}");
 
-            await HandlePacketAsync(client, id, packet);
+            await HandlePacketAsync(context, id, packet);
         }
 
-        public async Task HandlePacketAsync(Guid client, PacketId id, IPacket packet)
+        public async Task HandlePacketAsync(TContext context, PacketId id, IPacket packet)
         {
             // TODO: Check if try-catch is faster than bounds checking before access
             int metaBits = id.ToMetaBits();
@@ -100,7 +98,7 @@ namespace Currycomb.Common.Network.Minecraft
             if (Handlers[metaBits][pktId] == null)
                 throw new Exception($"Packet {id} is not handled by this handler.");
 
-            await Handlers[metaBits][pktId](client, packet);
+            await Handlers[metaBits][pktId](context, packet);
         }
     }
 }

@@ -1,16 +1,15 @@
 using System;
 using System.IO;
 using System.Threading.Tasks;
-using Currycomb.Common.Extensions;
 
 namespace Currycomb.Common.Network.Minecraft.Packets
 {
     public record PacketLoginSuccess(Guid Uuid, String Username) : IPacket
     {
-        public async Task WriteAsync(Stream stream)
+        public void Write(BinaryWriter writer)
         {
-            await stream.WriteAsync(Uuid);
-            await stream.WriteAsync(Username);
+            writer.Write(Uuid.ToByteArray());
+            writer.Write(Username);
         }
     }
 }

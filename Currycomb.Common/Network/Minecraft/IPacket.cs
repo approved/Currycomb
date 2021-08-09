@@ -6,6 +6,6 @@ namespace Currycomb.Common.Network.Minecraft
 {
     public interface IPacket
     {
-        public Task WriteAsync(Stream stream) => throw new NotImplementedException("Attempted to write packet without WriteAsync implemented.");
+        public void Write(BinaryWriter writer) => throw new NotImplementedException("Attempted to write packet without WriteAsync implemented.");
     }
 }

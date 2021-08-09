@@ -96,7 +96,7 @@ namespace Currycomb.Gateway
             }
             catch (Exception ex)
             {
-                Log.Error($"Fatal error occured: {Environment.NewLine}{ex.StackTrace}");
+                Log.Error(ex, $"Fatal error occured.");
                 throw;
             }
             finally

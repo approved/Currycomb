@@ -1,13 +1,15 @@
 ﻿using System;
+using System.Runtime.Serialization;
 using Newtonsoft.Json;
 
 namespace Currycomb.Common.Network.Broadcast
 {
+    [DataContract(Name = "ComEvent")]
     public class ComEvent
     {
-        public long Timestamp { get; set; }
-        public string Subject { get; set; }
-        public string Payload { get; set; }
+        [DataMember(Name = "ts")] public long Timestamp { get; set; }
+        [DataMember(Name = "sub")] public string Subject { get; set; }
+        [DataMember(Name = "msg")] public string Payload { get; set; }
 
         public ComEvent(EventType ev, string payload)
         {

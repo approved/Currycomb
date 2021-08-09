@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+
 namespace Currycomb.Common.Network.Minecraft
 {
     public enum PacketId : uint

@@ -7,7 +7,7 @@ namespace Currycomb.Common.Network.Minecraft.Packets
 {
     public record PacketResponse(String Json) : IPacket
     {
-        public Task WriteAsync(Stream stream)
-            => stream.WriteAsync(Json);
+        public void Write(BinaryWriter stream)
+            => stream.Write(Json);
     }
 }

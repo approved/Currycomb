@@ -1,25 +1,27 @@
 using System;
 using System.IO;
-using System.Threading.Tasks;
-using Currycomb.Common.Extensions;
 using Serilog;
 
 namespace Currycomb.Common.Network.Minecraft
 {
     public static class PacketExt
     {
-        public static async Task<Memory<byte>> ToBytes<T>(this T packet, PacketId id) where T : IPacket
+        public static Memory<byte> ToBytes<T>(this T packet) where T : IPacket
+            => ToBytes(packet, PacketIdMap<T>.Id);
+
+        public static Memory<byte> ToBytes<T>(this T packet, PacketId id) where T : IPacket
         {
             using MemoryStream ms = new();
+            using BinaryWriter bw = new(ms);
 
             // Placeholder space for packet Length
-            ms.Write7BitEncodedUInt(uint.MaxValue);
+            bw.Write7BitEncodedInt(unchecked((int)uint.MaxValue));
+            bw.Write7BitEncodedInt(unchecked((int)id.ToRaw()));
 
-            var packetStart = (uint)ms.Position;
-            Log.Information($"Writing PacketId: {id} ({id.ToRaw()})");
-            ms.Write7BitEncodedUInt(id.ToRaw());
+            // Max bytes for length is 5 (4 + 1 bit per byte as "continues next bit" flag)
+            var packetStart = 5;
 
-            await packet.WriteAsync(ms);
+            packet.Write(bw);
             var packetEnd = (uint)ms.Position;
             var packetSize = packetEnd - packetStart;
 
@@ -34,11 +36,10 @@ namespace Currycomb.Common.Network.Minecraft
 
             // Write packet length
             ms.Seek(sizeStart, SeekOrigin.Begin);
-            ms.Write7BitEncodedUInt(packetSize);
+            bw.Write7BitEncodedInt(unchecked((int)packetSize));
 
             // Return only the part of the stream that contains the packet (skipping any unused space at the start)
-            var buffer = ms.GetBuffer();
-            return new Memory<byte>(buffer, (int)sizeStart, (int)(packetEnd - sizeStart));
+            return new Memory<byte>(ms.GetBuffer(), (int)sizeStart, (int)(packetEnd - sizeStart));
         }
     }
 }

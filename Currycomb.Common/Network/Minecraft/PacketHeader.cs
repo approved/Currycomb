@@ -16,10 +16,10 @@ namespace Currycomb.Common.Network.Minecraft
             (uint)(await stream.Read7BitEncodedIntAsync())
         );
 
-        public async Task WriteAsync(Stream stream)
+        public void Write(BinaryWriter writer)
         {
-            await stream.Write7BitEncodedIntAsync((int)Length);
-            await stream.Write7BitEncodedIntAsync((int)PacketId);
+            writer.Write7BitEncodedInt((int)Length);
+            writer.Write7BitEncodedInt((int)PacketId);
         }
     }
 }

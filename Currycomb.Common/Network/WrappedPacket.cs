@@ -24,11 +24,11 @@ namespace Currycomb.Common.Network
 
         public byte[] GetOrCreatePacketByteArray() => _bytes ??= Data.ToArray();
 
-        public async Task WriteAsync(Stream stream)
+        public void WriteTo(BinaryWriter stream)
         {
-            await stream.WriteAsync(ClientId.ToByteArray());
-            await stream.Write7BitEncodedIntAsync(Data.Length);
-            await stream.WriteAsync(Data);
+            stream.Write(ClientId.ToByteArray());
+            stream.Write7BitEncodedInt(Data.Length);
+            stream.Write(Data.Span);
         }
     }
 }
