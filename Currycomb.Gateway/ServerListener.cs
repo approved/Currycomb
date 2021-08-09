@@ -17,6 +17,7 @@ namespace Currycomb.Gateway
 
             List<Task> clientTaskList = new()
             {
+                // Task.WhenAny throws if it is given an empty list before .NET 6.0
                 new TaskCompletionSource().Task
             };
 

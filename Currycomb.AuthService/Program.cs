@@ -8,7 +8,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Serilog;
-using Currycomb.Common.Extensions;
 using Currycomb.Common.Network;
 using Currycomb.Common.Network.Broadcast;
 using Currycomb.Common.Network.Minecraft;
@@ -52,29 +51,24 @@ namespace Currycomb.AuthService
                     switch (packet)
                     {
                         case PacketHandshake pkt:
-                            ClientState.AddOrUpdate(wrapped.ClientId, pkt.State, (_, _) => pkt.State);
-                            ComEvent ev = ComEvent.Create(EventType.ChangedState, new PayloadStateChange(wrapped.ClientId, pkt.State));
+                            {
+                                ClientState.AddOrUpdate(wrapped.ClientId, pkt.State, (_, _) => pkt.State);
+                                ComEvent ev = ComEvent.Create(EventType.ChangedState, new PayloadStateChange(wrapped.ClientId, pkt.State));
 
-                            await wps.SendAckAsync(wpkt);
-                            await clientWebSocket.SendAsync(Encoding.UTF8.GetBytes(ev.Serialize()), WebSocketMessageType.Text, true, default);
+                                await wps.SendAckAsync(wpkt);
+                                await clientWebSocket.SendAsync(Encoding.UTF8.GetBytes(ev.Serialize()), WebSocketMessageType.Text, true, default);
 
-                            break;
+                                break;
+                            }
                         case PacketLoginStart pkt:
                             {
                                 await wps.SendAckAsync(wpkt);
 
+                                ComEvent ev = ComEvent.Create(EventType.ChangedState, new PayloadStateChange(wrapped.ClientId, State.Play));
+                                await clientWebSocket.SendAsync(Encoding.UTF8.GetBytes(ev.Serialize()), WebSocketMessageType.Text, true, default);
+
                                 PacketLoginSuccess pktRes = new(Guid.NewGuid(), "Fiskpinne");
-
-                                // TODO: Very inefficient, avoid triple clone for the data
-
-                                using MemoryStream msPacket = new();
-                                await pktRes.WriteAsync(msPacket);
-
-                                using MemoryStream msFull = new();
-                                await msFull.Write7BitEncodedIntAsync((int)msPacket.Length);
-                                await msPacket.CopyToAsync(msFull);
-
-                                await wps.SendAsync(new WrappedPacket(wrapped.ClientId, msFull.ToArray()));
+                                await wps.SendAsync(new WrappedPacket(wrapped.ClientId, await pktRes.ToBytes(PacketId.LoginSuccess)));
                                 Log.Information("Replied to PacketLoginStart");
 
                                 break;
@@ -84,9 +78,8 @@ namespace Currycomb.AuthService
                                 await wps.SendAckAsync(wpkt);
 
                                 PacketResponse pktRes = new("{\"version\":{\"name\": \"1.17.1\",\"protocol\": 756},\"players\":{\"max\":100,\"online\":5},\"description\":{\"text\":\"Hello world\"}}");
+                                await wps.SendAsync(new WrappedPacket(wrapped.ClientId, await pktRes.ToBytes(PacketId.Response)));
 
-                                Memory<byte> pktBytes = await pktRes.ToBytes(PacketId.Response);
-                                await wps.SendAsync(new WrappedPacket(wrapped.ClientId, pktBytes));
                                 Log.Information("Replied to PacketRequest");
 
                                 break;

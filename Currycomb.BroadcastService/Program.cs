@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Net;
 using System.Net.WebSockets;
 using System.Text;
@@ -19,9 +20,22 @@ namespace Currycomb.BroadcastService
         record DisconnectEvent(WebSocket WebSocket) : Event;
         record BroadcastEvent(WebSocketMessageType Type, byte[] EventData) : Event;
 
+        private static readonly string LogFileName = $"logs/broadcast_service/broadcast_{DateTime.Now:yyyy-MM-dd-HH-mm-ss}_{Environment.ProcessId}.txt";
+
         public static async Task Main()
         {
-            List<Task> clientTaskList = new();
+            Log.Logger = new LoggerConfiguration()
+                   .MinimumLevel.Verbose()
+                   .WriteTo.Async(x => x.Console())
+                   .WriteTo.Async(x => x.File(LogFileName))
+                   .CreateLogger();
+
+            List<Task> clientTaskList = new List<Task>
+            {
+                // Task.WhenAny throws if it is given an empty list before .NET 6.0
+                new TaskCompletionSource().Task
+            };
+
             HttpListener listener = new();
             listener.Prefixes.Add("http://127.0.0.1:10002/");
             listener.Start();
@@ -65,6 +79,8 @@ namespace Currycomb.BroadcastService
 
             Task incomingHandler = Task.Run(async () =>
             {
+                Log.Information("Starting incoming handler?");
+
                 Task<HttpListenerWebSocketContext>? webSocketTask = null;
                 Task<Task>? dropClientTask = null;
 
@@ -78,6 +94,8 @@ namespace Currycomb.BroadcastService
 
                     if (completed == webSocketTask)
                     {
+                        Log.Information("Client connected.");
+
                         WebSocket ws = (await webSocketTask).WebSocket;
                         await eventChannel.Writer.WriteAsync(new ConnectEvent(ws));
 
@@ -102,6 +120,7 @@ namespace Currycomb.BroadcastService
                     }
                     else if (completed == dropClientTask)
                     {
+                        Log.Information("Client dropped.");
                         clientTaskList.Remove(await dropClientTask);
                         dropClientTask = null;
                     }
