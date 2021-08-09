@@ -40,7 +40,7 @@ namespace Currycomb.Gateway
             AuthService authService = new(authStream);
             PlayService playService = new();
 
-            IncomingPacketRouter c2sPackets = new(authService, playService);
+            PacketServiceRouter c2sPackets = new(authService, playService);
 
             await Task.WhenAll(
                 ServerListener.StartListener(listener, c2sPackets, authStream),

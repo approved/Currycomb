@@ -3,6 +3,9 @@ namespace Currycomb.Common.Network.Minecraft
     public enum PacketId : uint
     {
 #pragma warning disable format // @formatter:off
+        // Top 3 bits are in-use for our own metadata, if packet ids ever go that high
+        // (and they're not likely to) then we need to rewrite how we handle this.
+        //
         // Bit 31      = Client / Server bound
         // Bit 29 & 30 = State
 
@@ -34,6 +37,7 @@ namespace Currycomb.Common.Network.Minecraft
     {
         public static PacketId FromRaw(BoundTo bound, State state, uint id) => (PacketId)((uint)bound | (uint)state | id);
         public static uint ToRaw(this PacketId id) => (uint)id & 0b00011111111111111111111111111111;
+        public static byte ToMetaBits(this PacketId id) => (byte)(((uint)id & 0b11100000000000000000000000000000) >> 29);
 
         public static BoundTo BoundTo(this PacketId id) => (BoundTo)((uint)id & 0x80000000);
         public static State State(this PacketId id) => (State)((uint)id & 0x60000000);

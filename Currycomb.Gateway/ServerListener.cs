@@ -11,7 +11,7 @@ namespace Currycomb.Gateway
 {
     public class ServerListener
     {
-        internal static async Task StartListener(TcpListener listener, IncomingPacketRouter c2sPacketRouter, WrappedPacketStream authStream)
+        internal static async Task StartListener(TcpListener listener, PacketServiceRouter c2sPacketRouter, WrappedPacketStream authStream)
         {
             listener.Start();
 
@@ -84,7 +84,7 @@ namespace Currycomb.Gateway
                         }
 
                         Log.Information($"Forwarding packet to {packet.ClientId}.");
-                        await client.SendPacketAsync(packet.Packet);
+                        await client.SendPacketAsync(packet.Data);
 
                         authPacketTask = null;
                     }

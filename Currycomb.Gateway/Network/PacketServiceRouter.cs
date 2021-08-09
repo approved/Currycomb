@@ -4,12 +4,12 @@ using Currycomb.Gateway.Network.Services;
 
 namespace Currycomb.Gateway.Network
 {
-    public class IncomingPacketRouter
+    public class PacketServiceRouter
     {
         private readonly AuthService _authService;
         private readonly PlayService _playService;
 
-        public IncomingPacketRouter(AuthService authService, PlayService playService)
+        public PacketServiceRouter(AuthService authService, PlayService playService)
         {
             this._authService = authService;
             this._playService = playService;

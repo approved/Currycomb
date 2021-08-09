@@ -22,7 +22,7 @@ namespace Currycomb.Gateway.ClientData
 
         public ClientConnection(NetworkStream stream) => _stream = stream;
 
-        public async Task RunAsync(IncomingPacketRouter incomingPacketDispatcher)
+        public async Task RunAsync(PacketServiceRouter incomingPacketDispatcher)
         {
             byte[] bytes = new byte[MaximumPacketSize];
             using MemoryStream memory = new(bytes);
