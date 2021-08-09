@@ -154,14 +154,14 @@ namespace Currycomb.Common.Extensions
         public static Task WriteAsync(this Stream stream, long value)
         {
             byte[] buffer = new byte[8];
-            buffer[0] = (byte)value;
-            buffer[1] = (byte)(value >> 8);
-            buffer[2] = (byte)(value >> 16);
-            buffer[3] = (byte)(value >> 24);
-            buffer[4] = (byte)(value >> 32);
-            buffer[5] = (byte)(value >> 40);
-            buffer[6] = (byte)(value >> 48);
-            buffer[7] = (byte)(value >> 56);
+            buffer[7] = (byte)value;
+            buffer[6] = (byte)(value >> 8);
+            buffer[5] = (byte)(value >> 16);
+            buffer[4] = (byte)(value >> 24);
+            buffer[3] = (byte)(value >> 32);
+            buffer[2] = (byte)(value >> 40);
+            buffer[1] = (byte)(value >> 48);
+            buffer[0] = (byte)(value >> 56);
             return stream.WriteAsync(buffer, 0, 8);
         }
 
@@ -170,14 +170,14 @@ namespace Currycomb.Common.Extensions
             byte[] buffer = await ReadBytesAsync(stream, 8);
 
             long value = 0;
-            value |= (long)buffer[0];
-            value |= (long)buffer[1] << 8;
-            value |= (long)buffer[2] << 16;
-            value |= (long)buffer[3] << 24;
-            value |= (long)buffer[4] << 32;
-            value |= (long)buffer[5] << 40;
-            value |= (long)buffer[6] << 48;
-            value |= (long)buffer[7] << 56;
+            value |= (long)buffer[7];
+            value |= (long)buffer[6] << 8;
+            value |= (long)buffer[5] << 16;
+            value |= (long)buffer[4] << 24;
+            value |= (long)buffer[3] << 32;
+            value |= (long)buffer[2] << 40;
+            value |= (long)buffer[1] << 48;
+            value |= (long)buffer[0] << 56;
             return value;
         }
     }
