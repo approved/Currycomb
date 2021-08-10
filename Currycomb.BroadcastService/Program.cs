@@ -103,15 +103,23 @@ namespace Currycomb.BroadcastService
                             byte[] buffer = new byte[1024];
 
                             // TODO: Stitch packets
-                            while (!ct.IsCancellationRequested)
+                            try
                             {
-                                WebSocketReceiveResult data = await ws.ReceiveAsync(buffer, ct);
-
-                                await eventChannel.Writer.WriteAsync(data.MessageType switch
+                                while (!ct.IsCancellationRequested)
                                 {
-                                    WebSocketMessageType.Close => new DisconnectEvent(ws),
-                                    WebSocketMessageType type => new BroadcastEvent(type, buffer[..data.Count]),
-                                }, ct);
+                                    WebSocketReceiveResult data = await ws.ReceiveAsync(buffer, ct);
+
+                                    await eventChannel.Writer.WriteAsync(data.MessageType switch
+                                    {
+                                        WebSocketMessageType.Close => new DisconnectEvent(ws),
+                                        WebSocketMessageType type => new BroadcastEvent(type, buffer[..data.Count]),
+                                    }, ct);
+                                }
+                            }
+                            catch (WebSocketException e)
+                            {
+                                Log.Warning(e, "An exception occured and the client was dropped.");
+                                await eventChannel.Writer.WriteAsync(new DisconnectEvent(ws));
                             }
                         }));
 

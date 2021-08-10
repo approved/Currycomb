@@ -29,6 +29,7 @@ namespace Currycomb.Common.Network.Game
             { GamePacketId.EncryptionResponse, typeof(PacketEncryptionResponse) },
 
             { GamePacketId.JoinGame, typeof(PacketJoinGame) },
+            { GamePacketId.DisconnectPlay, typeof(PacketDisconnect) },
         };
 
         static readonly Dictionary<Type, GamePacketId> MapTypeToId = MapIdToType.ToDictionary(kvp => kvp.Value, kvp => kvp.Key);

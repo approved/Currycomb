@@ -1,4 +1,5 @@
 ﻿using Currycomb.Common.Game;
+using fNbt;
 using System.IO;
 using System.Threading.Tasks;
 
@@ -32,15 +33,66 @@ namespace Currycomb.Common.Network.Game.Packets
                 writer.Write(worldName);
             }
 
-            writer.Write((byte)0x0A);
-            writer.Write((byte)0x00);
-            writer.Write((byte)0x00);
-            writer.Write((byte)0x00);
+            {
+                var nbt = new NbtWriter(writer.BaseStream, string.Empty);
+                {
+                    nbt.BeginCompound("minecraft:dimension_type");
+                    {
+                        nbt.WriteString("type", "minecraft:dimension_type");
+                        nbt.BeginList("value", NbtTagType.Compound, 1);
+                        nbt.BeginCompound();
+                        {
+                            nbt.WriteString("name", "minecraft:overworld");
+                            nbt.WriteInt("id", 0);
+                            nbt.BeginCompound("element");
+                            {
+                                nbt.WriteByte("piglin_safe", 0);
+                                nbt.WriteByte("natural", 1);
+                                nbt.WriteFloat("ambient_light", 0.0f);
+                                nbt.WriteString("infiniburn", "minecraft:infiniburn_overworld");
+                                nbt.WriteByte("respawn_anchor_works", 0);
+                                nbt.WriteByte("has_skylight", 1);
+                                nbt.WriteByte("bed_works", 1);
+                                nbt.WriteString("effects", "minecraft:overworld");
+                                nbt.WriteByte("has_raids", 1);
+                                nbt.WriteInt("min_y", 0);
+                                nbt.WriteInt("height", 256);
+                                nbt.WriteInt("logical_height", 256);
+                                nbt.WriteDouble("coordinate_scale", 1.0d);
+                                nbt.WriteByte("ultrawarm", 0);
+                                nbt.WriteByte("has_ceiling", 0);
+                            }
+                            nbt.EndCompound();
+                        }
+                        nbt.EndCompound();
+                        nbt.EndList();
+                    }
+                    nbt.EndCompound();
+                }
+                nbt.EndCompound();
+                nbt.Finish();
+            }
 
-            writer.Write((byte)0x0A);
-            writer.Write((byte)0x00);
-            writer.Write((byte)0x00);
-            writer.Write((byte)0x00);
+            {
+                var nbt = new NbtWriter(writer.BaseStream, string.Empty);
+                nbt.WriteByte("piglin_safe", 0);
+                nbt.WriteByte("natural", 1);
+                nbt.WriteFloat("ambient_light", 0.0f);
+                nbt.WriteString("infiniburn", "minecraft:infiniburn_overworld");
+                nbt.WriteByte("respawn_anchor_works", 0);
+                nbt.WriteByte("has_skylight", 1);
+                nbt.WriteByte("bed_works", 1);
+                nbt.WriteString("effects", "minecraft:overworld");
+                nbt.WriteByte("has_raids", 1);
+                nbt.WriteInt("min_y", 0);
+                nbt.WriteInt("height", 256);
+                nbt.WriteInt("logical_height", 256);
+                nbt.WriteDouble("coordinate_scale", 1.0d);
+                nbt.WriteByte("ultrawarm", 0);
+                nbt.WriteByte("has_ceiling", 0);
+                nbt.EndCompound();
+                nbt.Finish();
+            }
 
             writer.Write(SpawnWorldIdentifier);
             writer.Write(WorldSeed);

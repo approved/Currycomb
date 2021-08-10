@@ -15,7 +15,7 @@ namespace Currycomb.Common.Network.Game
         Kick       = 0xFF | BoundTo.Client | State.Handshake,
 
         // Login
-        Disconnect          = 0x00 | BoundTo.Client | State.Login,
+        DisconnectLogin     = 0x00 | BoundTo.Client | State.Login,
         EncryptionRequest   = 0x01 | BoundTo.Client | State.Login,
         LoginSuccess        = 0x02 | BoundTo.Client | State.Login,
         SetCompression      = 0x03 | BoundTo.Client | State.Login,

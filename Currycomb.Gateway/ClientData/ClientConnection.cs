@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Net.Sockets;
 using System.Security.Cryptography;
@@ -22,6 +22,9 @@ namespace Currycomb.Gateway.ClientData
 
         private Stream _inUseStreamRead;
         private Stream _inUseStreamWrite;
+
+        private static readonly byte[] AesIsSeeminglyBroken = new byte[15];
+        private Aes? _aes;
 
         private bool _isInPlayState = false;
 
@@ -56,15 +59,40 @@ namespace Currycomb.Gateway.ClientData
             }
         }
 
-        public ValueTask SendPacketAsync(ReadOnlyMemory<byte> packetWithoutLength)
-            => _inUseStreamWrite.WriteAsync(packetWithoutLength);
+        public async Task SendPacketAsync(ReadOnlyMemory<byte> packet)
+        {
+            await _inUseStreamWrite.WriteAsync(packet);
+
+            if (_encryptStreamWrite != null)
+            {
+                // This is done due to .NET AES CFB8 seemingly not respecting FeedbackSize,
+                // instead requiring a multiple of 16 bytes to be written per "block".
+                // Until a full block of 16 bytes has been written to the stream, the last
+                // block will have its "tail" stuck in limbo waiting for another packet to
+                // finish the "block". This results in a lot of weird behaviour since packets
+                // are usually not sent in their entirety until another packet comes along and
+                // "finishes" them by writing past the seemingly arbitrary 16-byte boundary.
+                await _inUseStreamWrite.WriteAsync(AesIsSeeminglyBroken);
+            }
+        }
 
         public void SetAesKey(byte[] key)
         {
             Log.Debug("Enabling AES for ClientConnection {@id}.", Id);
 
-            _encryptStreamRead = new CryptoStream(_netStream, new AesCryptoServiceProvider().CreateDecryptor(key, key), CryptoStreamMode.Read);
-            _encryptStreamWrite = new CryptoStream(_netStream, new AesCryptoServiceProvider().CreateEncryptor(key, key), CryptoStreamMode.Write);
+            _aes = Aes.Create();
+            _aes.KeySize = 128;
+            _aes.BlockSize = 128;
+
+            _aes.Mode = CipherMode.CFB;
+            _aes.Padding = PaddingMode.None;
+            _aes.FeedbackSize = 8;
+
+            _aes.Key = key;
+            _aes.IV = key;
+
+            _encryptStreamRead = new CryptoStream(_netStream, _aes.CreateDecryptor(), CryptoStreamMode.Read);
+            _encryptStreamWrite = new CryptoStream(_netStream, _aes.CreateEncryptor(), CryptoStreamMode.Write);
 
             RefreshInUseStream();
         }

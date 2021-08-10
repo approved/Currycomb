@@ -25,8 +25,17 @@ namespace Currycomb.AuthService
 
         private async Task PacketLoginStart(Context c, PacketLoginStart pkt)
         {
-            // await c.SendPacket(new PacketEncryptionRequest(string.Empty, c.Rsa.ExportSubjectPublicKeyInfo(), c.VerifyToken));
-            await SendLoginSuccess(c);
+            // TODO: Configuration - we should allow toggling this somewhere
+            const bool useEncryption = true;
+
+            if (useEncryption)
+            {
+                await c.SendPacket(new PacketEncryptionRequest(string.Empty, c.Rsa.ExportSubjectPublicKeyInfo(), c.VerifyToken));
+            }
+            else
+            {
+                await SendLoginSuccess(c);
+            }
 
             Log.Information("Replied to PacketLoginStart");
         }
