@@ -33,6 +33,7 @@ namespace Currycomb.Common.Network.Minecraft
         Pong     = 0x01 | BoundTo.Client | State.Status,
 
         // Play
+        DisconnectPlay       = 0x1A | BoundTo.Client | State.Play,
         JoinGame             = 0x26 | BoundTo.Client | State.Play,
         PacketPlayerPosition = 0x38 | BoundTo.Client | State.Play,
         PacketSpawnPosition  = 0x4B | BoundTo.Client | State.Play,
