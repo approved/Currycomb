@@ -33,7 +33,7 @@ namespace Currycomb.AuthService
                 while (true)
                 {
                     WrappedPacketContainer wpkt = await wps.ReadAsync();
-                    Log.Information("Read wrapped packet: {@wpkt}", wpkt);
+                    Log.Information("Read wrapped packet: {@wpkt}");
 
                     WrappedPacket wrapped = wpkt.Packet;
 
@@ -63,12 +63,13 @@ namespace Currycomb.AuthService
 
             ClientWebSocket eventSocket = new();
 
-            Log.Information("Connecting to BroadcastService");
-            await eventSocket.ConnectAsync(new("ws://127.0.0.1:10002/"), ct);
+            Uri webSocketUri = new("ws://127.0.0.1:10002/");
+            await eventSocket.ConnectAsync(webSocketUri, ct);
+            Log.Information("Connecting to BroadcastService @ {@wsUri}", webSocketUri);
 
-            Log.Information("Connected, starting listener");
             TcpListener listener = new(IPAddress.Any, 10001);
             listener.Start();
+            Log.Information("Starting listener on {@listener}", listener.LocalEndpoint.ToString());
 
             while (true)
             {

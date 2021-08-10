@@ -98,22 +98,22 @@ namespace Currycomb.PlayService
                 .CreateLogger();
 
             CancellationTokenSource cts = new();
-            GameInstance game = new GameInstance();
-            Thread gameThread = new Thread(async () => await game.Run(cts.Token));
+            GameInstance game = new();
+            Thread gameThread = new(async () => await game.Run(cts.Token));
 
             gameThread.Start();
 
             // TODO: Implement config file
             ClientWebSocket eventSocket = new();
 
-            Log.Information("Connecting to BroadcastService");
-            await eventSocket.ConnectAsync(new("ws://127.0.0.1:10002/"), new());
+            Uri webSocketUri = new("ws://127.0.0.1:10002/");
+            await eventSocket.ConnectAsync(webSocketUri, new());
+            Log.Information("Connecting to BroadcastService @ {@wsUri}", webSocketUri);
 
-            Log.Information("Connected, starting listener");
             TcpListener listener = new(IPAddress.Any, 10003);
             listener.Start();
+            Log.Information("Starting listener on {@listener}", listener.LocalEndpoint.ToString());
 
-            Log.Information("Listening on {@listener}", listener);
             var eventSocketTask = HandleEventStream(game.EventWriter, eventSocket);
 
             while (true)
@@ -121,7 +121,7 @@ namespace Currycomb.PlayService
                 Log.Information("Awaiting connection");
 
                 using TcpClient client = await listener.AcceptTcpClientAsync();
-                Log.Information("Received client");
+                Log.Information("Received client {{ {@remoteEndpoint} }}", client.Client.RemoteEndPoint!.ToString());
 
                 WrappedPacketStream wps = new(client.GetStream());
                 CancellationTokenSource wpsCts = new();

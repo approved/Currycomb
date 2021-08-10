@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Net;
 using System.Net.WebSockets;
 using System.Text;
@@ -30,7 +29,7 @@ namespace Currycomb.BroadcastService
                    .WriteTo.Async(x => x.File(LogFileName))
                    .CreateLogger();
 
-            List<Task> clientTaskList = new List<Task>
+            List<Task> clientTaskList = new()
             {
                 // Task.WhenAny throws if it is given an empty list before .NET 6.0
                 new TaskCompletionSource().Task
@@ -40,7 +39,7 @@ namespace Currycomb.BroadcastService
             listener.Prefixes.Add("http://127.0.0.1:10002/");
             listener.Start();
 
-            Log.Information("Started listener");
+            Log.Information("Started listener {@listener}", listener);
 
             CancellationTokenSource cts = new();
 
@@ -78,7 +77,7 @@ namespace Currycomb.BroadcastService
 
             Task incomingHandler = Task.Run(async () =>
             {
-                Log.Information("Starting incoming handler?");
+                Log.Information("Starting incoming handler");
 
                 Task<HttpListenerWebSocketContext>? webSocketTask = null;
                 Task<Task>? dropClientTask = null;

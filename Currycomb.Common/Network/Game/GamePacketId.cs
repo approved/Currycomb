@@ -30,11 +30,20 @@ namespace Currycomb.Common.Network.Game
         Ping     = 0x01 | BoundTo.Server | State.Status,
         Pong     = 0x01 | BoundTo.Client | State.Status,
 
-        // Play
-        DisconnectPlay       = 0x1A | BoundTo.Client | State.Play,
-        JoinGame             = 0x26 | BoundTo.Client | State.Play,
-        PacketPlayerPosition = 0x38 | BoundTo.Client | State.Play,
-        PacketSpawnPosition  = 0x4B | BoundTo.Client | State.Play,
+        // Play - Client
+        ClientInformation     = 0x05 | BoundTo.Server | State.Play,
+        ClientCustomPayload   = 0x0A | BoundTo.Server | State.Play,
+        ClientPlayerAbilities = 0x19 | BoundTo.Server | State.Play,
+
+        // Play - Server
+        ChangeDifficulty      = 0x0E | BoundTo.Client | State.Play,
+        ServerCustomPayload   = 0x18 | BoundTo.Client | State.Play,
+        DisconnectPlay        = 0x1A | BoundTo.Client | State.Play,
+        JoinGame              = 0x26 | BoundTo.Client | State.Play,
+        ServerPlayerAbilities = 0x32 | BoundTo.Client | State.Play,
+        PacketPlayerPosition  = 0x38 | BoundTo.Client | State.Play,
+        SetHeldItem           = 0x48 | BoundTo.Client | State.Play,
+        PacketSpawnPosition   = 0x4B | BoundTo.Client | State.Play,
 
 #pragma warning restore format // @formatter:on
     }

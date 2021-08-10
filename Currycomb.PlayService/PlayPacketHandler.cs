@@ -19,9 +19,6 @@ namespace Currycomb.PlayService
         private async Task PacketJoinGame(Context c, PacketJoinGame pkt)
         {
             await c.SendPacket(new PacketJoinGame(0, false, GameMode.Creative, GameMode.None, new[] { "World" }, "World", 0, 32, false, false, false, false));
-            await c.SetState(State.Play);
-
-            Log.Information("Replied to PacketLoginStart");
         }
 
         private async Task PacketSpawnPosition(Context c, PacketSpawnPosition pkt)

@@ -1,7 +1,6 @@
 ﻿using Currycomb.Common.Game;
 using fNbt;
 using System.IO;
-using System.Threading.Tasks;
 
 namespace Currycomb.Common.Network.Game.Packets
 {

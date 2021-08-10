@@ -30,13 +30,14 @@ namespace Currycomb.AuthService
 
             if (useEncryption)
             {
+                Log.Information("Starting Encryption");
                 await c.SendPacket(new PacketEncryptionRequest(string.Empty, c.Rsa.ExportSubjectPublicKeyInfo(), c.VerifyToken));
             }
             else
             {
+                Log.Warning("Starting In Insecure Mode: No Encryption");
                 await SendLoginSuccess(c);
             }
-
             Log.Information("Replied to PacketLoginStart");
         }
 
