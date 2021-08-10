@@ -8,6 +8,10 @@ using Serilog;
 using Currycomb.Common.Network.Game;
 using Currycomb.Common.Network;
 using System.IO;
+using System.Threading.Channels;
+using Currycomb.Common.Network.Broadcast;
+using Newtonsoft.Json;
+using System.Text;
 
 namespace Currycomb.PlayService
 {
@@ -15,7 +19,7 @@ namespace Currycomb.PlayService
     {
         private static readonly string LogFileName = $"logs/play_service/play_{DateTime.Now:yyyy-MM-dd-HH-mm-ss}_{Environment.ProcessId}.txt";
 
-        public static async Task HandleWrappedPacketStream(ClientWebSocket eventSocket, WrappedPacketStream wps)
+        public static async Task HandleWrappedPacketStream(ChannelWriter<IGameEvent> evt, ClientWebSocket eventSocket, WrappedPacketStream wps)
         {
             PlayPacketHandler pph = new();
             GamePacketRouter<Context> router = pph.Router;
@@ -31,7 +35,7 @@ namespace Currycomb.PlayService
 
                     using MemoryStream memoryStream = new(wrapped.GetOrCreatePacketByteArray(), false);
 
-                    Context context = new(wrapped.ClientId, wps, eventSocket);
+                    Context context = new(evt, wrapped.ClientId, wps, eventSocket);
                     await router.HandlePacketAsync(context, memoryStream, (uint)wrapped.Data.Length);
                     await wps.SendAckAsync(wpkt);
                 }
@@ -41,6 +45,50 @@ namespace Currycomb.PlayService
                 Log.Error(e, "Exception in wrapped packet stream");
             }
         }
+
+        public static async Task HandleEventStream(ChannelWriter<IGameEvent> evt, ClientWebSocket eventSocket)
+        {
+            try
+            {
+                byte[] buffer = new byte[1024];
+                CancellationToken ct = default;
+
+                while (true)
+                {
+                    Log.Information("Waiting for event...");
+                    WebSocketReceiveResult data = await eventSocket.ReceiveAsync(buffer, ct);
+                    switch (data.MessageType)
+                    {
+                        case WebSocketMessageType.Text:
+                            ComEvent comEvent = JsonConvert.DeserializeObject<ComEvent>(Encoding.UTF8.GetString(buffer, 0, data.Count)) ?? throw new Exception("Invalid event");
+                            Log.Information("Received event: {@comEvent}", comEvent);
+
+                            switch (comEvent.Subject)
+                            {
+                                case "client::changed_state":
+                                    var payload = JsonConvert.DeserializeObject<PayloadStateChange>(comEvent.Payload) ?? throw new Exception("Invalid payload");
+
+                                    if (payload.State == State.Play)
+                                    {
+                                        await evt.WriteAsync(new EvtPlayerConnected(payload.Client));
+                                    }
+
+                                    break;
+                            }
+
+                            break;
+                        default:
+                            Log.Error("Received unknown message type: {@msgType}", data.MessageType);
+                            break;
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Error(e, "Exception in event stream");
+            }
+        }
+
         public static async Task Main()
         {
             Log.Logger = new LoggerConfiguration()
@@ -49,17 +97,24 @@ namespace Currycomb.PlayService
                 .WriteTo.Async(x => x.File(LogFileName))
                 .CreateLogger();
 
-            // TODO: Implement config file
-            CancellationToken ct = new();
+            CancellationTokenSource cts = new();
+            GameInstance game = new GameInstance();
+            Thread gameThread = new Thread(async () => await game.Run(cts.Token));
 
+            gameThread.Start();
+
+            // TODO: Implement config file
             ClientWebSocket eventSocket = new();
 
             Log.Information("Connecting to BroadcastService");
-            await eventSocket.ConnectAsync(new("ws://127.0.0.1:10002/"), ct);
+            await eventSocket.ConnectAsync(new("ws://127.0.0.1:10002/"), new());
 
             Log.Information("Connected, starting listener");
             TcpListener listener = new(IPAddress.Any, 10003);
             listener.Start();
+
+            Log.Information("Listening on {@listener}", listener);
+            var eventSocketTask = HandleEventStream(game.EventWriter, eventSocket);
 
             while (true)
             {
@@ -72,10 +127,15 @@ namespace Currycomb.PlayService
                 CancellationTokenSource wpsCts = new();
                 Task wpsTask = wps.RunAsync(wpsCts.Token);
 
-                await HandleWrappedPacketStream(eventSocket, wps);
+                Log.Information("Starting wrapped packet stream");
+
+                await Task.WhenAny(
+                    HandleWrappedPacketStream(game.EventWriter, eventSocket, wps),
+                    eventSocketTask
+                );
+
                 wpsCts.Cancel();
             }
         }
     }
 }
-

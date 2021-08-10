@@ -35,7 +35,7 @@ namespace Currycomb.Gateway
             await authClient.ConnectAsync("localhost", 10001);
 
             using TcpClient playClient = new();
-            await playClient.ConnectAsync("localhost", 10002);
+            await playClient.ConnectAsync("localhost", 10003);
 
             using WrappedPacketStream authStream = new(authClient.GetStream());
             using WrappedPacketStream playStream = new(playClient.GetStream());

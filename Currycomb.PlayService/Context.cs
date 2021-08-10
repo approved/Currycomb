@@ -2,25 +2,25 @@
 using Currycomb.Common.Network.Broadcast;
 using Currycomb.Common.Network.Game;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net.WebSockets;
 using System.Text;
-using System.Threading.Tasks;
+using System.Threading.Channels;
 
+using System.Threading.Tasks;
 namespace Currycomb.PlayService
 {
     public class Context : IGamePacketRouterContext
     {
         public readonly Guid ClientId;
+        public readonly ChannelWriter<IGameEvent> Event;
 
         private WrappedPacketStream _wps;
         private ClientWebSocket _events;
 
         public State State => State.Play;
 
-        public Context(Guid clientId, WrappedPacketStream wps, ClientWebSocket events)
-            => (ClientId, _wps, _events) = (clientId, wps, events);
+        public Context(ChannelWriter<IGameEvent> evt, Guid clientId, WrappedPacketStream wps, ClientWebSocket events)
+            => (Event, ClientId, _wps, _events) = (evt, clientId, wps, events);
 
         public Task SetState(State state)
             => Broadcast(EventType.ChangedState, new PayloadStateChange(ClientId, state));

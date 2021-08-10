@@ -18,7 +18,7 @@ namespace Currycomb.Common.Network.Broadcast
             EventType.ChangedState => "client::changed_state",
             EventType.ChangedId => "client::changed_id",
             EventType.Disconnect => "client::disconnect",
-            EventType.JoinWorld => "client::joinwed_world",
+            EventType.JoinWorld => "client::joined_world",
             _ => throw new InvalidOperationException($"Unknown event type {@event}."),
         };
     }
