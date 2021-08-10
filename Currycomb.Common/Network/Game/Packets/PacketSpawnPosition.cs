@@ -1,9 +1,9 @@
 ﻿using System.IO;
 using System.Numerics;
 
-namespace Currycomb.Common.Network.Minecraft.Packets
+namespace Currycomb.Common.Network.Game.Packets
 {
-    public record PacketSpawnPosition(Vector3 Position, float Angle) : IPacket
+    public record PacketSpawnPosition(Vector3 Position, float Angle) : IGamePacket
     {
         public void Write(BinaryWriter writer)
         {

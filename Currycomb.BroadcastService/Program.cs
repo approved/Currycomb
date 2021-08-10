@@ -55,7 +55,6 @@ namespace Currycomb.BroadcastService
                 while (!ct.IsCancellationRequested)
                 {
                     Event ev = await eventChannel.Reader.ReadAsync(ct);
-                    Log.Information($"Handling event: {ev}");
 
                     switch (ev)
                     {

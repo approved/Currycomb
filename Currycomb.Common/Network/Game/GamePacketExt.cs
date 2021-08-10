@@ -2,32 +2,38 @@ using System;
 using System.IO;
 using Serilog;
 
-namespace Currycomb.Common.Network.Minecraft
+namespace Currycomb.Common.Network.Game
 {
-    public static class PacketExt
+    public static class GamePacketExt
     {
-        public static Memory<byte> ToBytes<T>(this T packet) where T : IPacket
-            => ToBytes(packet, PacketIdMap<T>.Id);
+        public static Memory<byte> ToBytes<T>(this T packet) where T : IGamePacket
+            => ToBytes(packet, GamePacketIdMap<T>.Id);
 
-        public static Memory<byte> ToBytes<T>(this T packet, PacketId id) where T : IPacket
+        public static Memory<byte> ToBytes<T>(this T packet, GamePacketId id) where T : IGamePacket
         {
             using MemoryStream ms = new();
             using BinaryWriter bw = new(ms);
 
+            Log.Information("Sending packet: {@packetId}", id);
+
             // Placeholder space for packet Length
             bw.Write7BitEncodedInt(unchecked((int)uint.MaxValue));
-            bw.Write7BitEncodedInt(unchecked((int)id.ToRaw()));
+            var packetStart = ms.Position;
 
-            // Max bytes for length is 5 (4 + 1 bit per byte as "continues next bit" flag)
-            var packetStart = 5;
+            bw.Write7BitEncodedInt(unchecked((int)id.ToRaw()));
 
             packet.Write(bw);
             var packetEnd = (uint)ms.Position;
-            var packetSize = packetEnd - packetStart;
+            var packetSize = (uint)(packetEnd - packetStart);
 
-            // Get the size of the packet size (8 bits / 7 bits = X bytes)
-            var packetSizeBitCount = (ulong)(Math.Log(packetSize, 256) * 8);
-            var packetSizeByteCount = (uint)(((packetSizeBitCount - 1) / 7) + 1);
+            var packetSizeByteCount = packetSize switch
+            {
+                < 0x______80 => 1,
+                < 0x____4000 => 2,
+                < 0x__200000 => 3,
+                < 0x10000000 => 4,
+                _ => 5,
+            };
 
             // Get the position we want to start writing size at
             var sizeStart = packetStart - packetSizeByteCount;

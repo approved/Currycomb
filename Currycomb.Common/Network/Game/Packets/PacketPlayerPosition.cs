@@ -1,8 +1,8 @@
 ﻿using System.IO;
 
-namespace Currycomb.Common.Network.Minecraft.Packets
+namespace Currycomb.Common.Network.Game.Packets
 {
-    public record PacketPlayerPosition(double XPos, double YPos, double ZPos, float Yaw, float Pitch, int TeleportId, bool DoDismountVehicle) : IPacket
+    public record PacketPlayerPosition(double XPos, double YPos, double ZPos, float Yaw, float Pitch, int TeleportId, bool DoDismountVehicle) : IGamePacket
     {
         public void Write(BinaryWriter writer)
         {

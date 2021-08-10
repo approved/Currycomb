@@ -12,8 +12,7 @@ namespace Currycomb.Gateway.Network.Services
 
         public async Task HandleAsync(Guid id, Memory<byte> data)
         {
-            await PacketStream.SendWaitAsync(new WrappedPacket(id, data));
-
+            await PacketStream.SendWaitAsync(new WrappedPacket(id, data), false);
             Log.Information($"{id} sent packet to PlayService");
         }
 

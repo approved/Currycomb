@@ -2,16 +2,16 @@ using System.IO;
 using System.Threading.Tasks;
 using Currycomb.Common.Extensions;
 
-namespace Currycomb.Common.Network.Minecraft
+namespace Currycomb.Common.Network.Game
 {
-    public record PacketHeader(uint Length, uint PacketId)
+    public record GamePacketHeader(uint Length, uint PacketId)
     {
-        public static async Task<PacketHeader> ReadAsync(Stream stream) => new(
+        public static async Task<GamePacketHeader> ReadAsync(Stream stream) => new(
             (uint)(await stream.Read7BitEncodedIntAsync()),
             (uint)(await stream.Read7BitEncodedIntAsync())
         );
 
-        public static async Task<PacketHeader> ReadAsync(Stream stream, uint length) => new(
+        public static async Task<GamePacketHeader> ReadAsync(Stream stream, uint length) => new(
             length,
             (uint)(await stream.Read7BitEncodedIntAsync())
         );

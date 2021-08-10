@@ -6,6 +6,8 @@ using Currycomb.Gateway.ClientData;
 using Serilog;
 using Currycomb.Gateway.Network;
 using Currycomb.Common.Network;
+using Currycomb.Common.Network.Meta;
+using System.IO;
 
 namespace Currycomb.Gateway
 {
@@ -28,14 +30,18 @@ namespace Currycomb.Gateway
                 Task<TcpClient>? newClientTask = null;
                 Task<Task>? dropClientTask = null;
 
-                Task<WrappedPacket>? authPacketTask = null;
+                Task<WrappedPacketContainer>? authPacketTask = null;
+
+                MetaPacketHandler mph = new();
+                MetaPacketRouter<MetaContext> router = mph.Router;
+
 
                 // TODO: Split connection management and packet management into two separate threads
                 while (true)
                 {
                     // Accept the Client
                     newClientTask ??= listener.AcceptTcpClientAsync();
-                    authPacketTask ??= authStream.ReadAutoAckAsync();
+                    authPacketTask ??= authStream.ReadAsync(true);
 
                     dropClientTask ??= Task.WhenAny(clientTaskList);
 
@@ -75,7 +81,9 @@ namespace Currycomb.Gateway
                     else if (completed == authPacketTask)
                     {
                         Log.Information("Received packet");
-                        WrappedPacket packet = await authPacketTask;
+                        WrappedPacketContainer pktc = await authPacketTask;
+                        WrappedPacket packet = pktc.Packet;
+
                         Log.Information("Received packet for " + packet.ClientId);
 
                         if (!clientDict.TryGetValue(packet.ClientId, out var client))
@@ -83,8 +91,21 @@ namespace Currycomb.Gateway
                             throw new InvalidOperationException($"Received packet with unknown ClientId from AuthService: {packet.ClientId}");
                         }
 
-                        Log.Information($"Forwarding packet to {packet.ClientId}.");
-                        await client.SendPacketAsync(packet.Data);
+                        if (pktc.IsMetaPacket)
+                        {
+                            Log.Information("Handling meta packet related to {@clientId}.", packet.ClientId);
+                            MetaContext context = new(client);
+
+                            using MemoryStream ms = new MemoryStream(packet.GetOrCreatePacketByteArray(), false);
+                            using BinaryReader br = new(ms);
+
+                            await router.HandlePacketAsync(context, br);
+                        }
+                        else
+                        {
+                            Log.Information("Forwarding packet to {@clientId}.", packet.ClientId);
+                            await client.SendPacketAsync(packet.Data);
+                        }
 
                         authPacketTask = null;
                     }

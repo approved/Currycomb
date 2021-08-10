@@ -1,5 +1,9 @@
-namespace Currycomb.Common.Network.Minecraft
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+
+namespace Currycomb.Common.Network.Game
 {
+    [JsonConverter(typeof(StringEnumConverter))]
     public enum State : uint
     {
         Handshake = 0 << 29,

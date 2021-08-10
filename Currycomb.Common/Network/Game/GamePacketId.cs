@@ -1,8 +1,6 @@
-using System.Runtime.CompilerServices;
-
-namespace Currycomb.Common.Network.Minecraft
+namespace Currycomb.Common.Network.Game
 {
-    public enum PacketId : uint
+    public enum GamePacketId : uint
     {
 #pragma warning disable format // @formatter:off
         // Top 3 bits are in-use for our own metadata, if packet ids ever go that high
@@ -43,11 +41,11 @@ namespace Currycomb.Common.Network.Minecraft
 
     public static class PacketIdExt
     {
-        public static PacketId FromRaw(BoundTo bound, State state, uint id) => (PacketId)((uint)bound | (uint)state | id);
-        public static uint ToRaw(this PacketId id) => (uint)id & 0b00011111111111111111111111111111;
-        public static byte ToMetaBits(this PacketId id) => (byte)(((uint)id & 0b11100000000000000000000000000000) >> 29);
+        public static GamePacketId FromRaw(BoundTo bound, State state, uint id) => (GamePacketId)((uint)bound | (uint)state | id);
+        public static uint ToRaw(this GamePacketId id) => (uint)id & 0b00011111111111111111111111111111;
+        public static byte ToMetaBits(this GamePacketId id) => (byte)(((uint)id & 0b11100000000000000000000000000000) >> 29);
 
-        public static BoundTo BoundTo(this PacketId id) => (BoundTo)((uint)id & 0x80000000);
-        public static State State(this PacketId id) => (State)((uint)id & 0x60000000);
+        public static BoundTo BoundTo(this GamePacketId id) => (BoundTo)((uint)id & 0x80000000);
+        public static State State(this GamePacketId id) => (State)((uint)id & 0x60000000);
     }
 }

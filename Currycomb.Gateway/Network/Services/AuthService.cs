@@ -14,8 +14,7 @@ namespace Currycomb.Gateway.Network.Services
         {
             Log.Warning($"{id} attempting to complete handshake");
 
-            await PacketStream.SendWaitAsync(new WrappedPacket(id, data));
-
+            await PacketStream.SendWaitAsync(new WrappedPacket(id, data), false);
             Log.Information($"{id} sent packet to AuthService");
         }
 

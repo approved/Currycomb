@@ -1,8 +1,7 @@
 using System;
 using System.IO;
-using System.Threading.Tasks;
 
-namespace Currycomb.Common.Network.Minecraft
+namespace Currycomb.Common.Network
 {
     public interface IPacket
     {

@@ -1,5 +1,5 @@
 ﻿using System;
-using Currycomb.Common.Network.Minecraft;
+using Currycomb.Common.Network.Game;
 
 namespace Currycomb.Common.Network.Broadcast
 {

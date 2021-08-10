@@ -1,6 +1,6 @@
 ﻿using Currycomb.Common.Network;
 using Currycomb.Common.Network.Broadcast;
-using Currycomb.Common.Network.Minecraft;
+using Currycomb.Common.Network.Game;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace Currycomb.PlayService
 {
-    public class Context : IPacketRouterContext
+    public class Context : IGamePacketRouterContext
     {
         public readonly Guid ClientId;
 
@@ -25,8 +25,8 @@ namespace Currycomb.PlayService
         public Task SetState(State state)
             => Broadcast(EventType.ChangedState, new PayloadStateChange(ClientId, state));
 
-        public async Task SendPacket<T>(T packet) where T : IPacket
-            => await _wps.SendAsync(new WrappedPacket(ClientId, packet.ToBytes()));
+        public async Task SendPacket<T>(T packet) where T : IGamePacket
+            => await _wps.SendAsync(new WrappedPacket(ClientId, packet.ToBytes()), false);
 
         public async Task Broadcast(ComEvent ev)
             => await _events.SendAsync(Encoding.UTF8.GetBytes(ev.Serialize()), WebSocketMessageType.Text, true, default);

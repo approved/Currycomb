@@ -81,15 +81,16 @@ namespace Currycomb.Common.Network
             }
         }
 
-        public async Task<byte> SendWaitAsync(WrappedPacket packet)
+        public async Task<byte> SendWaitAsync(WrappedPacket packet, bool isMeta)
         {
-            log.Information($"Sending awaited packet: {packet}");
-
+            var meta = (byte)(META_ACK_REQ | (isMeta ? META_INT_PKT : 0));
             Guid id = Guid.NewGuid();
+
+            log.Information("Sending awaited packet: {@packet}", id);
 
             await WritePacketAsync(writer =>
             {
-                writer.Write(META_ACK_REQ);
+                writer.Write(meta);
                 writer.Write(id.ToByteArray());
                 packet.WriteTo(writer);
             });
@@ -100,17 +101,17 @@ namespace Currycomb.Common.Network
                 throw new InvalidOperationException("Attempted to send packet with a Guid that is already being awaited.");
             }
 
-            log.Information($"Waiting for ACK for packet: {packet}");
+            log.Information("Waiting for ACK for packet: {@id}", id);
             byte b = await tcs.Task;
-            log.Information($"Received ACK for packet: {packet}");
+            log.Information("Received ACK for packet: {@id}", id);
 
             return b;
         }
 
-        public Task SendAsync(WrappedPacket packet)
+        public Task SendAsync(WrappedPacket packet, bool isMeta)
             => WritePacketAsync(writer =>
             {
-                writer.Write((byte)0);
+                writer.Write((byte)(isMeta ? META_INT_PKT : 0));
                 packet.WriteTo(writer);
             });
 
@@ -133,27 +134,14 @@ namespace Currycomb.Common.Network
         public async Task<WrappedPacketContainer> ReadAsync(bool autoAck = false, CancellationToken ct = default)
         {
             WrappedPacketContainer pktc = await _queuedPackets.Reader.ReadAsync(ct);
-            log.Information($"Dequeued packet: {pktc}");
 
             if (!autoAck || !pktc.AckGuid.HasValue)
             {
-                log.Information($"Returning dequeued packet.");
                 return pktc;
             }
 
             await SendAckAsync(pktc.AckGuid.Value);
             return pktc with { AckGuid = null };
-        }
-
-        public async Task<WrappedPacket> ReadAutoAckAsync(CancellationToken ct = default)
-        {
-            WrappedPacketContainer pktc = await ReadAsync(true, ct);
-            WrappedPacket pkt = pktc.Packet;
-
-            await SendAckAsync(pktc);
-
-            log.Information("Returning packet data.");
-            return pkt;
         }
 
         public void Dispose() => _outputStream.Dispose();

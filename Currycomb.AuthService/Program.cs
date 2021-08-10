@@ -4,10 +4,11 @@ using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Net.WebSockets;
+using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 using Currycomb.Common.Network;
-using Currycomb.Common.Network.Minecraft;
+using Currycomb.Common.Network.Game;
 using Microsoft.IO;
 using Serilog;
 
@@ -22,22 +23,24 @@ namespace Currycomb.AuthService
         {
             ConcurrentDictionary<Guid, State> ClientState = new();
 
+            RSA rsa = RSA.Create(1024);
+
             AuthPacketHandler aph = new();
-            PacketRouter<Context> router = aph.Router;
+            GamePacketRouter<Context> gameRouter = aph.Router;
 
             try
             {
                 while (true)
                 {
                     WrappedPacketContainer wpkt = await wps.ReadAsync();
-                    Log.Information($"Read wrapped packet: {wpkt}");
+                    Log.Information("Read wrapped packet: {@wpkt}", wpkt);
 
                     WrappedPacket wrapped = wpkt.Packet;
 
                     using MemoryStream memoryStream = new(wrapped.GetOrCreatePacketByteArray(), false);
 
-                    Context context = new(wrapped.ClientId, ClientState, wps, eventSocket);
-                    await router.HandlePacketAsync(context, memoryStream, (uint)wrapped.Data.Length);
+                    Context context = new(wrapped.ClientId, rsa, ClientState, wps, eventSocket);
+                    await gameRouter.HandlePacketAsync(context, memoryStream, (uint)wrapped.Data.Length);
                     await wps.SendAckAsync(wpkt);
                 }
             }

@@ -1,35 +1,34 @@
 using System;
 using System.Threading.Tasks;
-using Currycomb.Common.Network.Minecraft;
 using System.Linq;
 using System.Collections.Generic;
 using System.IO;
 using Serilog;
 
-namespace Currycomb.Common.Network.Minecraft
+namespace Currycomb.Common.Network.Game
 {
-    public interface IPacketRouterContext
+    public interface IGamePacketRouterContext
     {
         public State State { get; }
     }
 
-    public class PacketRouter<TContext> where TContext : IPacketRouterContext
+    public class GamePacketRouter<TContext> where TContext : IGamePacketRouterContext
     {
-        public delegate Task PacketFunc(TContext context, IPacket packet);
+        public delegate Task PacketFunc(TContext context, IGamePacket packet);
 
-        public class PacketRouterBuilder
+        public class Builder
         {
-            private readonly Dictionary<PacketId, PacketFunc> Handlers = new();
+            private readonly Dictionary<GamePacketId, PacketFunc> Handlers = new();
 
-            public PacketRouterBuilder On<T>(Func<TContext, T, Task> handler) where T : IPacket
+            public Builder On<T>(Func<TContext, T, Task> handler) where T : IGamePacket
             {
-                Handlers.Add(PacketIdMap<T>.Id, (x, y) => handler(x, (T)y));
+                Handlers.Add(GamePacketIdMap<T>.Id, (x, y) => handler(x, (T)y));
                 return this;
             }
 
-            public PacketRouterBuilder On<T>(Action<TContext, T> handler) where T : IPacket
+            public Builder On<T>(Action<TContext, T> handler) where T : IGamePacket
             {
-                Handlers.Add(PacketIdMap<T>.Id, (x, y) =>
+                Handlers.Add(GamePacketIdMap<T>.Id, (x, y) =>
                 {
                     handler(x, (T)y);
                     return Task.CompletedTask;
@@ -38,14 +37,14 @@ namespace Currycomb.Common.Network.Minecraft
                 return this;
             }
 
-            public PacketRouter<TContext> Build() => new PacketRouter<TContext>(Handlers.Select(x => (x.Key, x.Value)).ToArray());
+            public GamePacketRouter<TContext> Build() => new GamePacketRouter<TContext>(Handlers.Select(x => (x.Key, x.Value)).ToArray());
         }
 
-        public static PacketRouterBuilder New() => new PacketRouterBuilder();
+        public static Builder New() => new Builder();
 
         public PacketFunc[][] Handlers;
 
-        public PacketRouter(params (PacketId Id, PacketFunc Func)[] handlers)
+        public GamePacketRouter(params (GamePacketId Id, PacketFunc Func)[] handlers)
         {
             // 3 meta bits
             Handlers = new PacketFunc[0b111][];
@@ -67,19 +66,19 @@ namespace Currycomb.Common.Network.Minecraft
 
         public async Task HandlePacketAsync(TContext context, Stream stream, uint length)
         {
-            PacketHeader header = await PacketHeader.ReadAsync(stream, length);
-            Log.Information($"Read packet header: {header}");
+            GamePacketHeader header = await GamePacketHeader.ReadAsync(stream, length);
+            Log.Information("Read packet header: {@header}", header);
 
-            PacketId id = PacketIdExt.FromRaw(BoundTo.Server, context.State, header.PacketId);
-            Log.Information($"Read packet id: {id}");
+            GamePacketId id = PacketIdExt.FromRaw(BoundTo.Server, context.State, header.PacketId);
+            Log.Information("Read packet id: {@id}", id);
 
-            IPacket packet = await PacketReader.ReadAsync(id, stream);
-            Log.Information($"Read packet: {packet}");
+            IGamePacket packet = await GamePacketReader.ReadAsync(id, stream);
+            Log.Information("Read packet: {@packet}", packet);
 
             await HandlePacketAsync(context, id, packet);
         }
 
-        public async Task HandlePacketAsync(TContext context, PacketId id, IPacket packet)
+        public async Task HandlePacketAsync(TContext context, GamePacketId id, IGamePacket packet)
         {
             // TODO: Check if try-catch is faster than bounds checking before access
             int metaBits = id.ToMetaBits();

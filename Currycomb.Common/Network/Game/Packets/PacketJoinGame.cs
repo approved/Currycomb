@@ -2,7 +2,7 @@
 using System.IO;
 using System.Threading.Tasks;
 
-namespace Currycomb.Common.Network.Minecraft.Packets
+namespace Currycomb.Common.Network.Game.Packets
 {
     public record PacketJoinGame(
         int EntityID,
@@ -18,21 +18,30 @@ namespace Currycomb.Common.Network.Minecraft.Packets
         bool ReducedDebugInfo,
         bool EnableRespawnScreen,
         bool IsDebug,
-        bool IsFlat) : IPacket
+        bool IsFlat) : IGamePacket
     {
         public void Write(BinaryWriter writer)
         {
             writer.Write(EntityID);
             writer.Write(IsHardcore);
             writer.Write(GameMode.AsByte());
-            writer .Write(PreviousGameMode.AsByte());
+            writer.Write(PreviousGameMode.AsByte());
             writer.Write7BitEncodedInt(WorldNames.Length);
             foreach (string worldName in WorldNames)
             {
                 writer.Write(worldName);
             }
-            writer.Write((byte)0);
-            writer.Write((byte)0);
+
+            writer.Write((byte)0x0A);
+            writer.Write((byte)0x00);
+            writer.Write((byte)0x00);
+            writer.Write((byte)0x00);
+
+            writer.Write((byte)0x0A);
+            writer.Write((byte)0x00);
+            writer.Write((byte)0x00);
+            writer.Write((byte)0x00);
+
             writer.Write(SpawnWorldIdentifier);
             writer.Write(WorldSeed);
             writer.Write7BitEncodedInt(0);

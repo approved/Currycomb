@@ -5,7 +5,7 @@ using System.Net;
 using System.Threading.Tasks;
 using System.Threading;
 using Serilog;
-using Currycomb.Common.Network.Minecraft;
+using Currycomb.Common.Network.Game;
 using Currycomb.Common.Network;
 using System.IO;
 
@@ -18,7 +18,7 @@ namespace Currycomb.PlayService
         public static async Task HandleWrappedPacketStream(ClientWebSocket eventSocket, WrappedPacketStream wps)
         {
             PlayPacketHandler pph = new();
-            PacketRouter<Context> router = pph.Router;
+            GamePacketRouter<Context> router = pph.Router;
 
             try
             {

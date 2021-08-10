@@ -1,6 +1,6 @@
 ﻿using Currycomb.Common.Game;
-using Currycomb.Common.Network.Minecraft;
-using Currycomb.Common.Network.Minecraft.Packets;
+using Currycomb.Common.Network.Game;
+using Currycomb.Common.Network.Game.Packets;
 using Serilog;
 using System.Numerics;
 using System.Threading.Tasks;
@@ -9,8 +9,8 @@ namespace Currycomb.PlayService
 {
     public class PlayPacketHandler
     {
-        PacketRouter<Context>? _router;
-        public PacketRouter<Context> Router => _router ??= PacketRouter<Context>.New()
+        GamePacketRouter<Context>? _router;
+        public GamePacketRouter<Context> Router => _router ??= GamePacketRouter<Context>.New()
             .On<PacketJoinGame>(PacketJoinGame)
             .On<PacketSpawnPosition>(PacketSpawnPosition)
             .On<PacketPlayerPosition>(PacketPlayerPosition)
