@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 using System.IO;
 using System.Net.Sockets;
@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Currycomb.Common.Network;
 using Currycomb.Common.Network.Game;
+using Currycomb.Common.Network.Meta.Packets;
 using Microsoft.IO;
 using Serilog;
 
@@ -32,7 +33,7 @@ namespace Currycomb.AuthService
                 while (true)
                 {
                     WrappedPacketContainer wpkt = await wps.ReadAsync();
-                    Log.Information("Read wrapped packet: {@wpkt}");
+                    Log.Information("Read wrapped packet: {wpkt}", wpkt);
 
                     WrappedPacket wrapped = wpkt.Packet;
 

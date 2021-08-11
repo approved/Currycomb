@@ -1,7 +1,6 @@
 using System;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
-using Currycomb.Common.Game;
 using Currycomb.Common.Network.Game;
 using Currycomb.Common.Network.Game.Packets;
 using Currycomb.Common.Network.Meta.Packets;

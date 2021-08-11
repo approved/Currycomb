@@ -17,20 +17,21 @@ namespace Currycomb.Common.Network
         // First byte sent for each packet is meta byte
         const byte META_ACK_REQ = 0b00000001; // ACK required
         const byte META_ACK_RES = 0b00000010; // ACK response
+        const byte META_INT_PKT = 0b00000100; // Paylod is Internal/Meta Packet - Not Minecraft
 
-        const byte META_INT_PKT = 0b00000100; // Paylod is Internal Packet - Not Minecraft
-
-        Stream _outputStream;
-        RecyclableMemoryStreamManager _msManager;
-
-        ConcurrentDictionary<Guid, TaskCompletionSource<byte>> _blocking = new();
-        Channel<WrappedPacketContainer> _queuedPackets = Channel.CreateUnbounded<WrappedPacketContainer>();
+        readonly Stream _outputStream;
+        readonly RecyclableMemoryStreamManager _msManager;
+        readonly ConcurrentDictionary<Guid, TaskCompletionSource<byte>> _blocking = new();
+        readonly Channel<WrappedPacketContainer> _queuedPackets = Channel.CreateUnbounded<WrappedPacketContainer>();
 
         public WrappedPacketStream(Stream stream, RecyclableMemoryStreamManager? msManager = null)
             => (_outputStream, _msManager) = (stream, msManager ?? new());
 
-        private MemoryStream GetMemoryStream() => _msManager.GetStream("WrappedPacketStream");
-        private BinaryWriter GetBinaryWriter() => new(GetMemoryStream());
+        private MemoryStream GetMemoryStream()
+            => _msManager.GetStream("WrappedPacketStream");
+
+        private BinaryWriter GetBinaryWriter()
+            => new(GetMemoryStream());
 
         private async Task WritePacketAsync(Action<BinaryWriter> action)
         {
@@ -51,12 +52,12 @@ namespace Currycomb.Common.Network
 
                 log.Information("Waiting for incoming packet");
 
-                await _outputStream.ReadAsync(metaBuffer, 0, 1);
+                await _outputStream.ReadAsync(metaBuffer.AsMemory(0, 1), ct);
                 byte meta = metaBuffer[0];
 
                 if ((meta & META_ACK_RES) != 0)
                 {
-                    await _outputStream.ReadAsync(ackBuffer, 0, 16);
+                    await _outputStream.ReadAsync(ackBuffer.AsMemory(0, 16), ct);
                     byte ackVal = (byte)_outputStream.ReadByte();
                     Guid ackGuid = new Guid(ackBuffer);
 
@@ -121,6 +122,8 @@ namespace Currycomb.Common.Network
         public Task SendAckAsync(Guid ack, byte data = 255)
             => WritePacketAsync(writer =>
             {
+                log.Debug("Sending ACK for packet {@id}", ack);
+
                 writer.Write(META_ACK_RES);
                 writer.Write(ack.ToByteArray());
                 writer.Write(data);
@@ -144,11 +147,14 @@ namespace Currycomb.Common.Network
                 return pktc;
             }
 
-            log.Information("Sending ACK for packet {guid}", pktc.AckGuid);
             await SendAckAsync(pktc.AckGuid.Value);
             return pktc with { AckGuid = null };
         }
 
-        public void Dispose() => _outputStream.Dispose();
+        public void Dispose()
+        {
+            _outputStream.Dispose();
+            GC.SuppressFinalize(this);
+        }
     }
 }
