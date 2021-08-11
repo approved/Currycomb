@@ -1,21 +1,24 @@
 ﻿using Currycomb.Common.Network;
 using Serilog;
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Currycomb.Gateway.Network.Services
 {
-    public class PlayService : IDisposable
+    public class PlayService : IService, IDisposable
     {
-        private WrappedPacketStream PacketStream;
-        public PlayService(WrappedPacketStream stream) => PacketStream = stream;
+        private WrappedPacketStream ServiceStream;
+        public PlayService(WrappedPacketStream stream) => ServiceStream = stream;
 
-        public async Task HandleAsync(Guid id, Memory<byte> data)
+        public Task RunAsync(CancellationToken cancellationToken = default) => ServiceStream.RunAsync();
+
+        public async ValueTask HandleAsync(WrappedPacket packet)
         {
-            await PacketStream.SendWaitAsync(new WrappedPacket(id, data), false);
-            Log.Information($"{id} sent packet to PlayService");
+            await ServiceStream.SendWaitAsync(packet, false);
+            Log.Information($"{packet.ClientId} sent packet to PlayService");
         }
 
-        public void Dispose() => PacketStream.Dispose();
+        public void Dispose() => ServiceStream.Dispose();
     }
 }

@@ -2,10 +2,12 @@ using System;
 using System.IO;
 using System.Net.Sockets;
 using System.Security.Cryptography;
+using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using Currycomb.Common.Extensions;
+using Currycomb.Common.Network;
 using Currycomb.Common.Network.Game;
-using Currycomb.Gateway.Network;
 using Serilog;
 
 namespace Currycomb.Gateway.ClientData
@@ -36,12 +38,16 @@ namespace Currycomb.Gateway.ClientData
 
         public void Dispose() => _netStream.Dispose();
 
-        public async Task RunAsync(PacketServiceRouter incomingPacketDispatcher)
+        // TODO(minor): Might want to re-evaluate this.
+        public async Task ReadPacketsToChannelAsync(Channel<(bool Authed, WrappedPacket)> channel, CancellationToken ct = default)
         {
+            ChannelWriter<(bool Authed, WrappedPacket)> writer = channel.Writer;
+
             byte[] bytes = new byte[MaximumPacketSize];
             using MemoryStream memory = new(bytes);
 
-            while (true)
+            // TODO: Use the cancellation token properly
+            while (!ct.IsCancellationRequested)
             {
                 int length = await _inUseStreamRead.Read7BitEncodedIntAsync();
                 if (length > MaximumPacketSize)
@@ -55,7 +61,7 @@ namespace Currycomb.Gateway.ClientData
 
                 for (int i = 0; i < length; i += await _inUseStreamRead.ReadAsync(bytes, i, length - i)) ;
 
-                await incomingPacketDispatcher.DispatchAsync(Id, _isInPlayState, bytes.AsMemory(0, length));
+                await channel.Writer.WriteAsync((_isInPlayState, new WrappedPacket(Id, memory.ToArray())));
             }
         }
 

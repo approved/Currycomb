@@ -1,54 +1,91 @@
-﻿using System;
-using System.Net.Sockets;
-using System.Net;
-using System.Threading;
+﻿using System.Net;
 using System.Threading.Tasks;
-using Serilog;
-using Currycomb.Gateway.Network;
 using Currycomb.Gateway.Network.Services;
 using Currycomb.Common.Network;
+using System.Threading.Channels;
+using System.Threading;
+using Serilog;
+using Serilog.Core;
 
 namespace Currycomb.Gateway
 {
     public class GatewayServer
     {
-        private static readonly string LogFileName = $"logs/gateway/gateway_{DateTime.Now:yyyy-MM-dd-HH-mm-ss}_{Environment.ProcessId}.txt";
+        private static readonly ILogger log = Log.ForContext<GatewayServer>();
 
-        public static async Task Main()
+        public async Task Run()
         {
-            Log.Logger = new LoggerConfiguration()
-                   .MinimumLevel.Verbose()
-                   .WriteTo.Async(x => x.Console())
-                   .WriteTo.Async(x => x.File(LogFileName))
-                   .CreateLogger();
+            CancellationTokenSource cts = new();
+            CancellationToken ct = cts.Token;
 
-            await new GatewayServer().Run();
-        }
-
-        private async Task Run()
-        {
             // TODO: Move to configuration file
-            // Open a listener on port 25565 (default MC port)
-            TcpListener listener = new(IPAddress.Any, 25565);
+            IPEndPoint authEndpoint = new(IPAddress.Any, 10001);
+            IPEndPoint playEndpoint = new(IPAddress.Any, 10003);
+            IPEndPoint gameEndpoint = new(IPAddress.Any, 25565);
 
-            using TcpClient authClient = new();
-            await authClient.ConnectAsync("localhost", 10001);
+            log.Information("Starting GatewayServer.");
+            log.Information("Ports: ");
+            log.Information("  Auth: {authPort}", authEndpoint.Port);
+            log.Information("  Play: {playPort}", playEndpoint.Port);
+            log.Information("  Game: {gamePort}", gameEndpoint.Port);
 
-            using TcpClient playClient = new();
-            await playClient.ConnectAsync("localhost", 10003);
+            AuthServiceManager authService = new();
+            PlayServiceManager playService = new();
 
-            using WrappedPacketStream authStream = new(authClient.GetStream());
-            using WrappedPacketStream playStream = new(playClient.GetStream());
+            ServiceListener<AuthServiceManager, AuthService> authListener = new(
+                authService,
+                authEndpoint,
+                x => new(new(x.GetStream())));
 
-            AuthService authService = new(authStream);
-            PlayService playService = new(playStream);
+            ServiceListener<PlayServiceManager, PlayService> playListener = new(
+                playService,
+                playEndpoint,
+                x => new(new(x.GetStream())));
 
-            PacketServiceRouter c2sPackets = new(authService, playService);
+            ServiceCollection services = new(authService, playService);
+            ClientCollection clients = new();
 
-            await Task.WhenAll(
-                ServerListener.StartListener(listener, c2sPackets, authStream),
-                authStream.RunAsync()
+            ClientListener clientListener = new(
+                clients,
+                gameEndpoint);
+
+            PacketRouter router = new(
+                clients,
+                new(authService, playService),
+                new(),
+                new());
+
+            Channel<WrappedPacketContainer> servicePackets = Channel.CreateUnbounded<WrappedPacketContainer>();
+            Channel<(bool Authed, WrappedPacket)> clientPackets = Channel.CreateUnbounded<(bool, WrappedPacket)>();
+
+            Task routeServicePackets = Task.Run(async () =>
+            {
+                await foreach (var packet in servicePackets.Reader.ReadAllAsync(ct))
+                    await router.RoutePacketFromService(packet, ct);
+            });
+
+            Task routeClientPackets = Task.Run(async () =>
+            {
+                await foreach (var (authenticated, packet) in clientPackets.Reader.ReadAllAsync(ct))
+                    await router.RoutePacketFromClient(authenticated, packet, ct);
+            });
+
+            log.Information("Finished starting GatewayServer");
+
+            await await Task.WhenAny(
+                routeServicePackets,
+                routeClientPackets,
+
+                clients.ReadPacketsToChannel(clientPackets, ct),
+                services.ReadPacketsToChannel(servicePackets, ct),
+
+                authListener.AcceptConnections(ct),
+                playListener.AcceptConnections(ct),
+
+                clientListener.AcceptConnections(ct)
             );
+
+            log.Information("GatewayServer is shutting down");
         }
     }
 }

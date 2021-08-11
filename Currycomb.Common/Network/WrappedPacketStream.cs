@@ -2,7 +2,6 @@ using Currycomb.Common.Extensions;
 using Microsoft.IO;
 using Serilog;
 using System;
-using System.Buffers;
 using System.Collections.Concurrent;
 using System.IO;
 using System.Threading;
@@ -71,11 +70,10 @@ namespace Currycomb.Common.Network
                     continue;
                 }
 
-                log.Information($"Reading incoming wrapped packet");
                 Guid? ack = (meta & META_ACK_REQ) != 0 ? await _outputStream.ReadGuidAsync() : null;
                 bool isInternalPacket = (meta & META_INT_PKT) != 0;
 
-                log.Information($"Reading incoming wrapped packet data: {ack}");
+                log.Information("Reading incoming wrapped packet {ack}", ack);
                 await _queuedPackets.Writer.WriteAsync(new WrappedPacketContainer(ack, await WrappedPacket.ReadAsync(_outputStream), isInternalPacket));
                 log.Information($"Queued incoming wrapped packet");
             }
@@ -134,12 +132,14 @@ namespace Currycomb.Common.Network
         public async Task<WrappedPacketContainer> ReadAsync(bool autoAck = false, CancellationToken ct = default)
         {
             WrappedPacketContainer pktc = await _queuedPackets.Reader.ReadAsync(ct);
+            log.Information("Received packet {guid}", pktc.AckGuid);
 
             if (!autoAck || !pktc.AckGuid.HasValue)
             {
                 return pktc;
             }
 
+            log.Information("Sending ACK for packet {guid}", pktc.AckGuid);
             await SendAckAsync(pktc.AckGuid.Value);
             return pktc with { AckGuid = null };
         }

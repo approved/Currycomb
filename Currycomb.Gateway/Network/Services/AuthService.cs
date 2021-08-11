@@ -1,23 +1,36 @@
-﻿using Currycomb.Common.Network;
-using Serilog;
-using System;
+﻿using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
+using Currycomb.Common.Network;
+using Serilog;
 
 namespace Currycomb.Gateway.Network.Services
 {
-    public class AuthService : IDisposable
+    public class AuthService : IService, IDisposable
     {
-        private WrappedPacketStream PacketStream;
-        public AuthService(WrappedPacketStream stream) => PacketStream = stream;
+        private WrappedPacketStream ServiceStream;
+        public AuthService(WrappedPacketStream stream) => ServiceStream = stream;
 
-        public async Task HandleAsync(Guid id, Memory<byte> data)
+        public void Dispose() => ServiceStream.Dispose();
+        public Task RunAsync(CancellationToken cancellationToken = default) => ServiceStream.RunAsync();
+
+        public async ValueTask HandleAsync(WrappedPacket packet)
         {
+            Guid id = packet.ClientId;
             Log.Warning($"{id} attempting to complete handshake");
 
-            await PacketStream.SendWaitAsync(new WrappedPacket(id, data), false);
+            await ServiceStream.SendWaitAsync(packet, false);
             Log.Information($"{id} sent packet to AuthService");
         }
 
-        public void Dispose() => PacketStream.Dispose();
+        public async IAsyncEnumerable<WrappedPacketContainer> ReadPacketsAsync([EnumeratorCancellation] CancellationToken ct = default)
+        {
+            while (!ct.IsCancellationRequested)
+            {
+                yield return await ServiceStream.ReadAsync(true, ct);
+            }
+        }
     }
 }

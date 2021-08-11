@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.IO;
-using System.Net;
 using System.Net.Sockets;
 using System.Net.WebSockets;
 using System.Security.Cryptography;
@@ -67,16 +66,13 @@ namespace Currycomb.AuthService
             await eventSocket.ConnectAsync(webSocketUri, ct);
             Log.Information("Connecting to BroadcastService @ {@wsUri}", webSocketUri);
 
-            TcpListener listener = new(IPAddress.Any, 10001);
-            listener.Start();
-            Log.Information("Starting listener on {@listener}", listener.LocalEndpoint.ToString());
+            Uri gatewayUri = new("ws://127.0.0.1:10001/");
 
             while (true)
             {
-                Log.Information("Awaiting connection");
-
-                using TcpClient client = await listener.AcceptTcpClientAsync();
-                Log.Information("Received client");
+                Log.Information("Connecting to Gateway @ {@gatewayUri}", gatewayUri);
+                using TcpClient client = new TcpClient(gatewayUri.Host, gatewayUri.Port);
+                Log.Information("Connected");
 
                 WrappedPacketStream wps = new(client.GetStream(), MsManager);
                 CancellationTokenSource wpsCts = new();
