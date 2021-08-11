@@ -26,7 +26,7 @@ namespace Currycomb.AuthService
         private async Task PacketLoginStart(Context c, PacketLoginStart pkt)
         {
             // TODO: Configuration - we should allow toggling this somewhere
-            const bool useEncryption = true;
+            const bool useEncryption = false;
 
             if (useEncryption)
             {
@@ -74,7 +74,6 @@ namespace Currycomb.AuthService
         {
             await c.SendPacket(new PacketLoginSuccess(Guid.NewGuid(), "Fiskpinne"));
             await c.SetState(State.Play);
-            await c.SendPacket(new PacketJoinGame(0, false, GameMode.Creative, GameMode.None, new[] { "world" }, "world", 0, 32, false, false, false, false));
         }
     }
 }

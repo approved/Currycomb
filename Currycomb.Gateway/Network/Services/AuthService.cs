@@ -14,7 +14,7 @@ namespace Currycomb.Gateway.Network.Services
         public AuthService(WrappedPacketStream stream) => ServiceStream = stream;
 
         public void Dispose() => ServiceStream.Dispose();
-        public Task RunAsync(CancellationToken cancellationToken = default) => ServiceStream.RunAsync();
+        public Task RunAsync(CancellationToken cancellationToken = default) => ServiceStream.RunAsync(cancellationToken);
 
         public async ValueTask HandleAsync(WrappedPacket packet)
         {

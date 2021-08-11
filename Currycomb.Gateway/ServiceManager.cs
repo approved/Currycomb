@@ -66,7 +66,10 @@ namespace Currycomb.Gateway
             lock (_activeServiceSwapLock)
             {
                 if (_activeService != null)
+                {
+                    log.Information("{@service} {0}", _activeService.RunTask.Status);
                     return _activeService;
+                }
             }
 
             log.Warning("No active {@service} found, awaiting a new instance.");
@@ -94,6 +97,7 @@ namespace Currycomb.Gateway
                 if (_activeService == null)
                     return;
 
+                log.Warning("Invalidating {@service}", _activeService.Service);
                 _activeService.Invalidated.SetResult();
                 _activeService.Cts.Cancel();
 
@@ -103,22 +107,32 @@ namespace Currycomb.Gateway
 
         public async IAsyncEnumerable<WrappedPacketContainer> ReadPacketsAsync([EnumeratorCancellation] CancellationToken ct = default)
         {
-            while (!ct.IsCancellationRequested)
+            log.Information("Started Reading Packets from {service}");
+            try
             {
-                ActiveService service = await GetActiveService(ct);
-
-                // Read all incoming packets, if any exist
-                await foreach (WrappedPacketContainer wpc in service.Service.ReadPacketsAsync(ct))
+                while (!ct.IsCancellationRequested)
                 {
-                    log.Information("Received packet from {@service}", service.Service.GetType());
-                    yield return wpc;
+                    ActiveService service = await GetActiveService(ct);
+
+                    // Read all incoming packets, if any exist
+                    await foreach (WrappedPacketContainer wpc in service.Service.ReadPacketsAsync(ct))
+                    {
+                        log.Information("Received packet from {@service}", service.Service.GetType());
+                        yield return wpc;
+                    }
+
+                    log.Information("No more packets in queue from {@service}", service.Service.GetType());
+
+                    if (ct.IsCancellationRequested)
+                        break;
+
+                    // If we run out of packets we don't want to retry until the service is invalidated
+                    await service.Invalidated.Task;
                 }
-
-                if (ct.IsCancellationRequested)
-                    break;
-
-                // If we run out of packets we don't want to retry until the service is invalidated
-                await service.Invalidated.Task;
+            }
+            finally
+            {
+                log.Error("ReadPacketsAsync Ended");
             }
         }
     }

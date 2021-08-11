@@ -24,4 +24,6 @@ namespace Currycomb.Common.Network.Game.Packets
             writer.Write(Data);
         }
     }
+    public record PacketClientCustomPayload(string Channel, byte[] Data) : PacketCustomPayload(Channel, Data) { }
+    public record PacketServerCustomPayload(string Channel, byte[] Data) : PacketCustomPayload(Channel, Data) { }
 }

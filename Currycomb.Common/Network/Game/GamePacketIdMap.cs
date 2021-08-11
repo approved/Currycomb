@@ -28,8 +28,20 @@ namespace Currycomb.Common.Network.Game
             { GamePacketId.EncryptionRequest, typeof(PacketEncryptionRequest) },
             { GamePacketId.EncryptionResponse, typeof(PacketEncryptionResponse) },
 
-            { GamePacketId.JoinGame, typeof(PacketJoinGame) },
+            // Play - Client
+            { GamePacketId.ClientInformation, typeof(PacketClientInformation) },
+            { GamePacketId.ClientCustomPayload, typeof(PacketClientCustomPayload) },
+            { GamePacketId.ClientPlayerAbilities, typeof(PacketClientPlayerAbilities) },
+
+            // Play - Server
+            { GamePacketId.ChangeDifficulty, typeof(PacketChangeDifficulty) },
+            { GamePacketId.ServerCustomPayload, typeof(PacketServerCustomPayload) },
             { GamePacketId.DisconnectPlay, typeof(PacketDisconnect) },
+            { GamePacketId.JoinGame, typeof(PacketJoinGame) },
+            { GamePacketId.ServerPlayerAbilities, typeof(PacketServerPlayerAbilities) },
+            { GamePacketId.PacketPlayerPosition, typeof(PacketPlayerPosition) },
+            { GamePacketId.SetHeldItem, typeof(PacketSetHeldItem) },
+            { GamePacketId.PacketSpawnPosition, typeof(PacketSpawnPosition) },
         };
 
         static readonly Dictionary<Type, GamePacketId> MapTypeToId = MapIdToType.ToDictionary(kvp => kvp.Value, kvp => kvp.Key);

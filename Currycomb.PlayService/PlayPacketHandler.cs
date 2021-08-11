@@ -30,7 +30,7 @@ namespace Currycomb.PlayService
 
         private async Task PacketPlayerPosition(Context c, PacketPlayerPosition pkt)
         {
-            await c.SendPacket(new PacketPlayerPosition(0, 0, 0, 0, 0, 0, false));
+            await c.SendPacket(new PacketPlayerPosition(0, 0, 0, 0, 0, 0, 0, false));
 
             Log.Information("Replied to PacketPlayerPosition");
         }

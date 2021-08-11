@@ -26,7 +26,7 @@ namespace Currycomb.Gateway
                 IService service = services[i];
                 tasks[i] = Task.Run(async () =>
                 {
-                    Log.Debug("Starting reader for packets {serviceType}", service.GetType());
+                    Log.Debug("Starting reader for packets from {serviceType}", service.GetType());
 
                     await foreach (var packet in service.ReadPacketsAsync(ct))
                         await queue.Writer.WriteAsync(packet);

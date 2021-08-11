@@ -116,7 +116,7 @@ namespace Currycomb.PlayService
             {
                 Log.Information("Connecting");
 
-                using TcpClient client = new TcpClient("localhost", 10003);
+                using TcpClient client = new("localhost", 10003);
                 Log.Information("Connected to {{ {@remoteEndpoint} }}", client.Client.RemoteEndPoint!.ToString());
 
                 WrappedPacketStream wps = new(client.GetStream());
