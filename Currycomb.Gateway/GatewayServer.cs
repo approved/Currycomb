@@ -60,14 +60,17 @@ namespace Currycomb.Gateway
 
             Task routeServicePackets = Task.Run(async () =>
             {
-                await foreach (var packet in servicePackets.Reader.ReadAllAsync(ct))
-                    await router.RoutePacketFromService(packet, ct);
+                while (!ct.IsCancellationRequested)
+                    await router.RoutePacketFromService(await servicePackets.Reader.ReadAsync(ct), ct);
             });
 
             Task routeClientPackets = Task.Run(async () =>
             {
-                await foreach (var (authenticated, packet) in clientPackets.Reader.ReadAllAsync(ct))
+                while (!ct.IsCancellationRequested)
+                {
+                    var (authenticated, packet) = await clientPackets.Reader.ReadAsync(ct);
                     await router.RoutePacketFromClient(authenticated, packet, ct);
+                }
             });
 
             log.Information("Finished starting GatewayServer");
@@ -76,8 +79,8 @@ namespace Currycomb.Gateway
                 routeServicePackets,
                 routeClientPackets,
 
-                clients.ReadPacketsToChannel(clientPackets, ct),
-                services.ReadPacketsToChannel(servicePackets, ct),
+                clients.ReadPacketsToChannel(clientPackets.Writer, ct),
+                services.ReadPacketsToChannel(servicePackets.Writer, ct),
 
                 authListener.AcceptConnections(ct),
                 playListener.AcceptConnections(ct),

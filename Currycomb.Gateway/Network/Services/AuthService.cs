@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using Currycomb.Common.Network;
 using Serilog;
@@ -25,11 +26,11 @@ namespace Currycomb.Gateway.Network.Services
             Log.Information($"{id} sent packet to AuthService");
         }
 
-        public async IAsyncEnumerable<WrappedPacketContainer> ReadPacketsAsync([EnumeratorCancellation] CancellationToken ct = default)
+        public async Task ReadPacketsToChannelAsync(ChannelWriter<WrappedPacketContainer> channel, CancellationToken ct = default)
         {
             while (!ct.IsCancellationRequested)
             {
-                yield return await ServiceStream.ReadAsync(true, ct);
+                await channel.WriteAsync(await ServiceStream.ReadAsync(true, ct), ct);
             }
         }
     }

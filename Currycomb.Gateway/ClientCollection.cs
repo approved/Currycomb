@@ -60,7 +60,7 @@ namespace Currycomb.Gateway
 
         private Channel<ClientConnection> _newClient = Channel.CreateUnbounded<ClientConnection>();
 
-        public async Task ReadPacketsToChannel(Channel<(bool Authed, WrappedPacket)> queue, CancellationToken ct = default)
+        public async Task ReadPacketsToChannel(ChannelWriter<(bool Authed, WrappedPacket)> writer, CancellationToken ct = default)
         {
             List<Task<Guid>> tasks = new() { new TaskCompletionSource<Guid>().Task };
             Task<Task<Guid>>? handleOldClients;
@@ -71,7 +71,7 @@ namespace Currycomb.Gateway
                 {
                     tasks.Add(Task.Run(async () =>
                     {
-                        await client.ReadPacketsToChannelAsync(queue, ct);
+                        await client.ReadPacketsToChannelAsync(writer, ct);
                         return client.Id;
                     }));
                 }

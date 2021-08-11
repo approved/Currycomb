@@ -70,11 +70,11 @@ namespace Currycomb.Common.Network
                     continue;
                 }
 
-                Guid? ack = (meta & META_ACK_REQ) != 0 ? await _outputStream.ReadGuidAsync() : null;
+                Guid? acknowledgement = (meta & META_ACK_REQ) != 0 ? await _outputStream.ReadGuidAsync() : null;
                 bool isInternalPacket = (meta & META_INT_PKT) != 0;
 
-                log.Information("Reading incoming wrapped packet {ack}", ack);
-                await _queuedPackets.Writer.WriteAsync(new WrappedPacketContainer(ack, await WrappedPacket.ReadAsync(_outputStream), isInternalPacket));
+                log.Information("Reading incoming wrapped packet {ack}", acknowledgement);
+                await _queuedPackets.Writer.WriteAsync(new WrappedPacketContainer(acknowledgement, isInternalPacket, await WrappedPacket.ReadAsync(_outputStream)), ct);
                 log.Information($"Queued incoming wrapped packet");
             }
         }
@@ -82,28 +82,33 @@ namespace Currycomb.Common.Network
         public async Task<byte> SendWaitAsync(WrappedPacket packet, bool isMeta)
         {
             var meta = (byte)(META_ACK_REQ | (isMeta ? META_INT_PKT : 0));
-            Guid id = Guid.NewGuid();
+            Guid ack = Guid.NewGuid();
 
-            log.Information("Sending awaited packet: {@packet}", id);
-
-            await WritePacketAsync(writer =>
-            {
-                writer.Write(meta);
-                writer.Write(id.ToByteArray());
-                packet.WriteTo(writer);
-            });
+            log.Information("Sending awaited packet: {@ack}", ack);
 
             TaskCompletionSource<byte> tcs = new();
-            if (!_blocking.TryAdd(id, tcs))
+            if (!_blocking.TryAdd(ack, tcs))
             {
                 throw new InvalidOperationException("Attempted to send packet with a Guid that is already being awaited.");
             }
 
-            log.Information("Waiting for ACK for packet: {@id}", id);
-            byte b = await tcs.Task;
-            log.Information("Received ACK for packet: {@id}", id);
+            try
+            {
+                log.Information("Sending and waiting for ACK for packet: {@ack}", ack);
+                await WritePacketAsync(writer =>
+                {
+                    writer.Write(meta);
+                    writer.Write(ack.ToByteArray());
+                    packet.WriteTo(writer);
+                });
+            }
+            catch
+            {
+                _blocking.TryRemove(ack, out _);
+                throw;
+            }
 
-            return b;
+            return await tcs.Task;
         }
 
         public Task SendAsync(WrappedPacket packet, bool isMeta)

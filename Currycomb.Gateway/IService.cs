@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using Currycomb.Common.Network.Broadcast;
 using System.Threading;
 using System.Linq;
+using System.Threading.Channels;
 
 namespace Currycomb.Gateway
 {
@@ -14,6 +15,6 @@ namespace Currycomb.Gateway
 
         Task RunAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
 
-        IAsyncEnumerable<WrappedPacketContainer> ReadPacketsAsync(CancellationToken ct = default) => AsyncEnumerable.Empty<WrappedPacketContainer>();
+        Task ReadPacketsToChannelAsync(ChannelWriter<WrappedPacketContainer> channel, CancellationToken ct = default) => Task.CompletedTask;
     }
 }

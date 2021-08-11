@@ -1,11 +1,9 @@
 using System.Threading.Tasks;
 using Serilog;
 using Currycomb.Common.Network;
-using System.Collections.Generic;
 using System.Threading.Channels;
 using Currycomb.Common.Network.Broadcast;
 using System.Threading;
-using System.Runtime.CompilerServices;
 using System;
 
 namespace Currycomb.Gateway
@@ -13,51 +11,46 @@ namespace Currycomb.Gateway
     public class ServiceManager<TService> : IService
         where TService : IService
     {
-        record ActiveService(TService Service, TaskCompletionSource Invalidated, CancellationTokenSource Cts, Task RunTask);
+        record ActiveService(Guid Id, TService Service, TaskCompletionSource Invalidated, CancellationTokenSource Cts, Task RunTask);
 
-        private static ILogger log = Log.ForContext<ServiceManager<TService>>()
-                                        .ForContext("service", typeof(TService).Name);
+        private static readonly ILogger log = Log
+            .ForContext<ServiceManager<TService>>()
+            .ForContext("service", typeof(TService).Name);
 
-        object _activeServiceSwapLock = new();
-        Channel<TService> _serviceQueue = Channel.CreateUnbounded<TService>();
+        readonly object _activeServiceSwapLock = new();
+        readonly Channel<TService> _serviceQueue = Channel.CreateUnbounded<TService>();
+
         ActiveService? _activeService;
+        Task<TService>? _activeServiceQueued;
 
-        public async ValueTask AddServiceInstance(TService service)
-            => await _serviceQueue.Writer.WriteAsync(service);
+        public ValueTask AddServiceInstance(TService service)
+            => _serviceQueue.Writer.WriteAsync(service);
 
-        public async ValueTask HandleAsync(WrappedPacket packet)
+        public ValueTask HandleAsync(WrappedPacket packet)
+            => WithService(x => x.Service.HandleAsync(packet));
+
+        public ValueTask HandleAsync(ComEvent evt)
+            => WithService(x => x.Service.HandleAsync(evt));
+
+        private async ValueTask WithService(Func<ActiveService, ValueTask> func, CancellationToken ct = default)
         {
-            // TODO: Handle failure during routing.
-            ActiveService act = await GetActiveService();
-
-            try
+            while (!ct.IsCancellationRequested)
             {
-                await act.Service.HandleAsync(packet);
-            }
-            catch (Exception e)
-            {
-                log.Error(e, "Failed to handle packet, yeeting {@type} service and retrying.", typeof(TService));
+                ActiveService act = await GetActiveService(ct);
 
-                InvalidateActiveService();
-                await HandleAsync(packet);
-            }
-        }
+                if (ct.IsCancellationRequested)
+                    return;
 
-        public async ValueTask HandleAsync(ComEvent evt)
-        {
-            // TODO: Handle failure during routing.
-            ActiveService act = await GetActiveService();
-
-            try
-            {
-                await act.Service.HandleAsync(evt);
-            }
-            catch (Exception e)
-            {
-                log.Error(e, "Failed to handle packet, yeeting {@type} service and retrying.", typeof(TService));
-
-                InvalidateActiveService();
-                await HandleAsync(evt);
+                try
+                {
+                    await func(act);
+                    return;
+                }
+                catch (Exception e)
+                {
+                    log.Error(e, "Failed to handle packet, yeeting {@type} instance [{@id}] and retrying.", typeof(TService), act.Id);
+                    InvalidateActiveService();
+                }
             }
         }
 
@@ -70,10 +63,12 @@ namespace Currycomb.Gateway
                     log.Information("{@service} {0}", _activeService.RunTask.Status);
                     return _activeService;
                 }
+
+                _activeServiceQueued ??= _serviceQueue.Reader.ReadAsync(ct).AsTask();
             }
 
             log.Warning("No active {@service} found, awaiting a new instance.");
-            TService service = await _serviceQueue.Reader.ReadAsync(ct);
+            TService service = await _activeServiceQueued;
 
             lock (_activeServiceSwapLock)
             {
@@ -82,9 +77,11 @@ namespace Currycomb.Gateway
                     log.Information("New active {@service} found and swapped in.");
 
                     CancellationTokenSource cts = new();
-                    return _activeService = new(service, new(), cts, service.RunAsync(cts.Token));
+                    return _activeService = new(Guid.NewGuid(), service, new(), cts, service.RunAsync(cts.Token));
                 }
             }
+
+            log.Information("{@service} was already swapped in.");
 
             await _serviceQueue.Writer.WriteAsync(service, ct);
             return await GetActiveService(ct);
@@ -98,6 +95,8 @@ namespace Currycomb.Gateway
                     return;
 
                 log.Warning("Invalidating {@service}", _activeService.Service);
+                _activeServiceQueued = null;
+
                 _activeService.Invalidated.SetResult();
                 _activeService.Cts.Cancel();
 
@@ -105,35 +104,30 @@ namespace Currycomb.Gateway
             }
         }
 
-        public async IAsyncEnumerable<WrappedPacketContainer> ReadPacketsAsync([EnumeratorCancellation] CancellationToken ct = default)
+        public async Task ReadPacketsToChannelAsync(ChannelWriter<WrappedPacketContainer> channel, CancellationToken ct = default)
         {
             log.Information("Started Reading Packets from {service}");
+            ActiveService service = await GetActiveService(ct);
+
+            // Read all incoming packets, if any exist
+            var mixedCts = CancellationTokenSource.CreateLinkedTokenSource(ct, service.Cts.Token);
             try
             {
-                while (!ct.IsCancellationRequested)
-                {
-                    ActiveService service = await GetActiveService(ct);
-
-                    // Read all incoming packets, if any exist
-                    await foreach (WrappedPacketContainer wpc in service.Service.ReadPacketsAsync(ct))
-                    {
-                        log.Information("Received packet from {@service}", service.Service.GetType());
-                        yield return wpc;
-                    }
-
-                    log.Information("No more packets in queue from {@service}", service.Service.GetType());
-
-                    if (ct.IsCancellationRequested)
-                        break;
-
-                    // If we run out of packets we don't want to retry until the service is invalidated
-                    await service.Invalidated.Task;
-                }
+                log.Debug("Reading from service {@service} to channel");
+                await service.Service.ReadPacketsToChannelAsync(channel, mixedCts.Token);
             }
-            finally
-            {
-                log.Error("ReadPacketsAsync Ended");
-            }
+            catch (OperationCanceledException) { /* this just means we're done */ }
+
+            log.Debug("Finished reading from service {@service}");
+
+            if (ct.IsCancellationRequested)
+                return;
+
+            log.Debug("Waiting for {@service} to be invalidated");
+            // If we run out of packets we don't want to retry until the service is invalidated
+            await service.Invalidated.Task;
+
+            log.Debug("{@service} was invalidated");
         }
     }
 }

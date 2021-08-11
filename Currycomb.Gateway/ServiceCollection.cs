@@ -12,7 +12,7 @@ namespace Currycomb.Gateway
 
         public ServiceCollection(params IService[] services) => _services = services;
 
-        public async Task ReadPacketsToChannel(Channel<WrappedPacketContainer> queue, CancellationToken ct = default)
+        public async Task ReadPacketsToChannel(ChannelWriter<WrappedPacketContainer> channel, CancellationToken ct = default)
         {
             Log.Debug("Reading packets from {serviceCount} services", _services.Length);
 
@@ -28,8 +28,7 @@ namespace Currycomb.Gateway
                 {
                     Log.Debug("Starting reader for packets from {serviceType}", service.GetType());
 
-                    await foreach (var packet in service.ReadPacketsAsync(ct))
-                        await queue.Writer.WriteAsync(packet);
+                    await service.ReadPacketsToChannelAsync(channel, ct);
                 });
             }
 
