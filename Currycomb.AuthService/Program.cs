@@ -6,9 +6,11 @@ using System.Net.WebSockets;
 using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
+using Currycomb.AuthService.Configuration;
 using Currycomb.Common.Network;
 using Currycomb.Common.Network.Game;
-using Currycomb.Common.Network.Meta.Packets;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Primitives;
 using Microsoft.IO;
 using Serilog;
 
@@ -58,16 +60,34 @@ namespace Currycomb.AuthService
                 .WriteTo.Async(x => x.File(LogFileName))
                 .CreateLogger();
 
+            Log.Information("AuthService starting");
+            var env = Environment.GetEnvironmentVariable("CC_ENV") ?? "live";
+            var configuration = new ConfigurationBuilder()
+                .SetBasePath(Environment.CurrentDirectory)
+                // Base config
+                .AddJsonFile($"cfg.json", true, true)
+                .AddJsonFile($"cfg.{env}.json", true, true)
+                // Auth-specific config
+                .AddJsonFile($"cfg.svc_auth.json", true, true)
+                .AddJsonFile($"cfg.svc_auth.{env}.json", true, true)
+                // Env vars and command line args override JSON configs
+                .AddEnvironmentVariables($"CC_CFG_")
+                .AddEnvironmentVariables($"CC_CFG_{env}_")
+                .AddCommandLine(args)
+                .Build();
+
+            var appConfig = configuration.Get<AppConfiguration>();
+            Log.Information("Loaded configuration: {@appConfig}", appConfig);
+
             // TODO: Implement config file
             CancellationToken ct = new();
-
             ClientWebSocket eventSocket = new();
 
-            Uri webSocketUri = new("ws://127.0.0.1:10002/");
-            await eventSocket.ConnectAsync(webSocketUri, ct);
-            Log.Information("Connecting to BroadcastService @ {@wsUri}", webSocketUri);
+            Uri broadcastUri = appConfig.Broadcast.Uri;
+            Uri gatewayUri = appConfig.Gateway.Uri;
 
-            Uri gatewayUri = new("ws://127.0.0.1:10001/");
+            await eventSocket.ConnectAsync(broadcastUri, ct);
+            Log.Information("Connecting to BroadcastService @ {@wsUri}", broadcastUri);
 
             while (true)
             {

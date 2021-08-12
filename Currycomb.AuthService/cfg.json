@@ -1,0 +1,10 @@
+{
+    "Gateway": {
+        "Uri": "ws://localhost:10001",
+        "ReconnectDelay": "00:00:05"
+    },
+    "Broadcast": {
+        "Uri": "ws://localhost:10002",
+        "ReconnectDelay": "00:00:05"
+    }
+}
