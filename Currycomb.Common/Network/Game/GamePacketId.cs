@@ -37,13 +37,19 @@ namespace Currycomb.Common.Network.Game
 
         // Play - Server
         ChangeDifficulty      = 0x0E | BoundTo.Client | State.Play,
-        ServerCustomPayload   = 0x18 | BoundTo.Client | State.Play,
+        WindowItems           = 0x14 | BoundTo.Client | State.Play,
+        ServerCustomPayload   = 0x18 | BoundTo.Client | State.Play, // Also known as PluginMessage
         DisconnectPlay        = 0x1A | BoundTo.Client | State.Play,
+        EntityStatus          = 0x1B | BoundTo.Client | State.Play,
+        ChunkData             = 0x22 | BoundTo.Client | State.Play,
+        UpdateLight           = 0x25 | BoundTo.Client | State.Play,
         JoinGame              = 0x26 | BoundTo.Client | State.Play,
         ServerPlayerAbilities = 0x32 | BoundTo.Client | State.Play,
-        PacketPlayerPosition  = 0x38 | BoundTo.Client | State.Play,
+        PlayerPosition        = 0x38 | BoundTo.Client | State.Play,
         SetHeldItem           = 0x48 | BoundTo.Client | State.Play,
-        PacketSpawnPosition   = 0x4B | BoundTo.Client | State.Play,
+        UpdateViewPosition    = 0x49 | BoundTo.Client | State.Play,
+        SpawnPosition         = 0x4B | BoundTo.Client | State.Play,
+        TimeUpdate            = 0x58 | BoundTo.Client | State.Play,
 
 #pragma warning restore format // @formatter:on
     }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 using System.Threading;
@@ -19,7 +19,16 @@ namespace Currycomb.PlayService
         private static readonly string LogFileName = $"logs/play_service/play_{DateTime.Now:yyyy-MM-dd-HH-mm-ss}_{Environment.ProcessId}.txt";
         private static readonly RecyclableMemoryStreamManager MsManager = new RecyclableMemoryStreamManager();
 
-        public static async Task HandleWrappedPacketStream(ChannelWriter<IGameEvent> evt, WrappedPacketStream wps)
+        public static async Task HandleWrappedPacketStreamOutgoing(ChannelReader<WrappedPacket> outgoing, WrappedPacketStream wps)
+        {
+            while (true)
+            {
+                var packet = await outgoing.ReadAsync();
+                await wps.SendAsync(packet, false);
+            }
+        }
+
+        public static async Task HandleWrappedPacketStreamIncoming(ChannelWriter<IGameEvent> evt, WrappedPacketStream wps)
         {
             GamePacketRouter<Context> gameRouter = new PlayPacketHandler().Router;
             MetaPacketRouter<Context> metaRouter = new MetaPacketHandler().Router;
@@ -90,8 +99,10 @@ namespace Currycomb.PlayService
 
             Log.Information("Loaded configuration: {@gateway}", gateway);
 
+            Channel<WrappedPacket> outgoing = Channel.CreateUnbounded<WrappedPacket>();
+
             CancellationTokenSource cts = new();
-            GameInstance game = new();
+            GameInstance game = new(MsManager, outgoing.Writer);
             Thread gameThread = new(async () => await game.Run(cts.Token));
 
             gameThread.Start();
@@ -110,7 +121,8 @@ namespace Currycomb.PlayService
 
                     await await Task.WhenAny(
                         wps.RunAsync(sessionCts.Token),
-                        HandleWrappedPacketStream(game.EventWriter, wps)
+                        HandleWrappedPacketStreamOutgoing(outgoing.Reader, wps),
+                        HandleWrappedPacketStreamIncoming(game.EventWriter, wps)
                     );
                 }
                 // No connection could be made because the target machine actively refused it.

@@ -35,13 +35,18 @@ namespace Currycomb.Common.Network.Game
 
             // Play - Server
             { GamePacketId.ChangeDifficulty, typeof(PacketChangeDifficulty) },
+            { GamePacketId.WindowItems, typeof(PacketWindowItems) },
             { GamePacketId.ServerCustomPayload, typeof(PacketServerCustomPayload) },
             { GamePacketId.DisconnectPlay, typeof(PacketDisconnect) },
+            { GamePacketId.ChunkData, typeof(PacketChunkData) },
+            { GamePacketId.UpdateLight, typeof(PacketUpdateLight) },
             { GamePacketId.JoinGame, typeof(PacketJoinGame) },
             { GamePacketId.ServerPlayerAbilities, typeof(PacketServerPlayerAbilities) },
-            { GamePacketId.PacketPlayerPosition, typeof(PacketPlayerPosition) },
+            { GamePacketId.PlayerPosition, typeof(PacketPlayerPosition) },
             { GamePacketId.SetHeldItem, typeof(PacketSetHeldItem) },
-            { GamePacketId.PacketSpawnPosition, typeof(PacketSpawnPosition) },
+            { GamePacketId.UpdateViewPosition, typeof(PacketUpdateViewPosition) },
+            { GamePacketId.SpawnPosition, typeof(PacketSpawnPosition) },
+            { GamePacketId.TimeUpdate, typeof(PacketTimeUpdate) },
         };
 
         static readonly Dictionary<Type, GamePacketId> MapTypeToId = MapIdToType.ToDictionary(kvp => kvp.Value, kvp => kvp.Key);

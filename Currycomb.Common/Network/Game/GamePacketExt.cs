@@ -6,15 +6,16 @@ namespace Currycomb.Common.Network.Game
 {
     public static class GamePacketExt
     {
-        public static Memory<byte> ToBytes<T>(this T packet) where T : IGamePacket
+        public static Memory<byte> ToBytes<T>(this T packet, MemoryStream? ms = null) where T : IGamePacket
             => ToBytes(packet, GamePacketIdMap<T>.Id);
 
-        public static Memory<byte> ToBytes<T>(this T packet, GamePacketId id) where T : IGamePacket
+        public static Memory<byte> ToBytes<T>(this T packet, GamePacketId id, MemoryStream? msIn = null) where T : IGamePacket
         {
-            using MemoryStream ms = new();
+            // Should most likely not dispose streams that got passed in
+            using MemoryStream ms = msIn ?? new();
             using BinaryWriter bw = new(ms);
 
-            Log.Information("Sending packet: {@packetId}", id);
+            Log.Information("Serializing packet: {@packetId}", id);
 
             // Placeholder space for packet Length
             bw.Write7BitEncodedInt(unchecked((int)uint.MaxValue));
