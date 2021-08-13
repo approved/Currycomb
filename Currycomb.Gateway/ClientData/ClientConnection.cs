@@ -65,18 +65,25 @@ namespace Currycomb.Gateway.ClientData
 
         public async Task SendPacketAsync(ReadOnlyMemory<byte> packet)
         {
-            await _inUseStreamWrite.WriteAsync(packet);
-
-            if (_encryptStreamWrite != null)
+            try
             {
-                // This is done due to .NET AES CFB8 seemingly not respecting FeedbackSize,
-                // instead requiring a multiple of 16 bytes to be written per "block".
-                // Until a full block of 16 bytes has been written to the stream, the last
-                // block will have its "tail" stuck in limbo waiting for another packet to
-                // finish the "block". This results in a lot of weird behaviour since packets
-                // are usually not sent in their entirety until another packet comes along and
-                // "finishes" them by writing past the seemingly arbitrary 16-byte boundary.
-                await _inUseStreamWrite.WriteAsync(AesIsSeeminglyBroken);
+                await _inUseStreamWrite.WriteAsync(packet);
+
+                if (_encryptStreamWrite != null)
+                {
+                    // This is done due to .NET AES CFB8 seemingly not respecting FeedbackSize,
+                    // instead requiring a multiple of 16 bytes to be written per "block".
+                    // Until a full block of 16 bytes has been written to the stream, the last
+                    // block will have its "tail" stuck in limbo waiting for another packet to
+                    // finish the "block". This results in a lot of weird behaviour since packets
+                    // are usually not sent in their entirety until another packet comes along and
+                    // "finishes" them by writing past the seemingly arbitrary 16-byte boundary.
+                    await _inUseStreamWrite.WriteAsync(AesIsSeeminglyBroken);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Error writing packet to client.");
             }
         }
 
