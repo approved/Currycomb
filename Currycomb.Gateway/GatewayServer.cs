@@ -5,7 +5,6 @@ using Currycomb.Common.Network;
 using System.Threading.Channels;
 using System.Threading;
 using Serilog;
-using Serilog.Core;
 
 namespace Currycomb.Gateway
 {
@@ -61,7 +60,9 @@ namespace Currycomb.Gateway
             Task routeServicePackets = Task.Run(async () =>
             {
                 while (!ct.IsCancellationRequested)
+                {
                     await router.RoutePacketFromService(await servicePackets.Reader.ReadAsync(ct), ct);
+                }
             });
 
             Task routeClientPackets = Task.Run(async () =>

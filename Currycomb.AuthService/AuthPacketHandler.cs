@@ -3,6 +3,7 @@ using System.Security.Cryptography;
 using System.Threading.Tasks;
 using Currycomb.Common.Network.Game;
 using Currycomb.Common.Network.Game.Packets;
+using Currycomb.Common.Network.Meta;
 using Currycomb.Common.Network.Meta.Packets;
 using Serilog;
 
@@ -25,7 +26,7 @@ namespace Currycomb.AuthService
         private async Task PacketLoginStart(Context c, PacketLoginStart pkt)
         {
             // TODO: Configuration - we should allow toggling this somewhere
-            const bool useEncryption = false;
+            const bool useEncryption = true;
 
             if (useEncryption)
             {
@@ -74,5 +75,12 @@ namespace Currycomb.AuthService
             await c.SendPacket(new PacketLoginSuccess(Guid.NewGuid(), "Fiskpinne"));
             await c.SetState(State.Play);
         }
+    }
+
+    public class MetaPacketHandler
+    {
+        private MetaPacketRouter<Context>? _router;
+        public MetaPacketRouter<Context> Router => _router ??= MetaPacketRouter<Context>.New()
+            .Build();
     }
 }

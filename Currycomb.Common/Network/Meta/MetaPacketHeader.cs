@@ -2,9 +2,17 @@ using System.IO;
 
 namespace Currycomb.Common.Network.Meta
 {
-    public record MetaPacketHeader(byte PacketId)
+    public readonly struct MetaPacketHeader
     {
-        public static MetaPacketHeader Read(BinaryReader reader) => new((byte)reader.ReadByte());
-        public void Write(BinaryWriter writer) => writer.Write(PacketId);
+        public readonly MetaPacketId PacketId { get; init; }
+
+        public MetaPacketHeader(MetaPacketId packetId)
+            => PacketId = packetId;
+
+        public static MetaPacketHeader Read(BinaryReader reader)
+            => new((MetaPacketId)reader.ReadByte());
+
+        public void Write(BinaryWriter writer)
+            => writer.Write((byte)PacketId);
     }
 }

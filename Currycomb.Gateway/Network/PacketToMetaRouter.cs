@@ -4,7 +4,7 @@ using Currycomb.Gateway.ClientData;
 using Currycomb.Common.Network.Meta;
 using System.IO;
 
-namespace Currycomb.Gateway
+namespace Currycomb.Gateway.Network
 {
     public class PacketToMetaRouter
     {

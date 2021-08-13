@@ -2,15 +2,14 @@ using System;
 using System.Collections.Concurrent;
 using System.IO;
 using System.Net.Sockets;
-using System.Net.WebSockets;
 using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
-using Currycomb.AuthService.Configuration;
+using Currycomb.Common.Configuration;
 using Currycomb.Common.Network;
 using Currycomb.Common.Network.Game;
+using Currycomb.Common.Network.Meta;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Primitives;
 using Microsoft.IO;
 using Serilog;
 
@@ -21,34 +20,38 @@ namespace Currycomb.AuthService
         private static readonly string LogFileName = $"logs/auth_service/auth_{DateTime.Now:yyyy-MM-dd-HH-mm-ss}_{Environment.ProcessId}.txt";
         private static readonly RecyclableMemoryStreamManager MsManager = new RecyclableMemoryStreamManager();
 
-        public static async Task HandleWrappedPacketStream(ClientWebSocket eventSocket, WrappedPacketStream wps)
+        public static async Task HandleWrappedPacketStream(WrappedPacketStream wps, CancellationToken ct = default)
         {
             ConcurrentDictionary<Guid, State> ClientState = new();
 
             RSA rsa = RSA.Create(1024);
 
-            AuthPacketHandler aph = new();
-            GamePacketRouter<Context> gameRouter = aph.Router;
+            GamePacketRouter<Context> gameRouter = new AuthPacketHandler().Router;
+            MetaPacketRouter<Context> metaRouter = new MetaPacketHandler().Router;
 
-            try
+            while (!ct.IsCancellationRequested)
             {
-                while (true)
+                WrappedPacketContainer wpkt = await wps.ReadAsync(false, ct);
+                Log.Information("Read wrapped packet: {wpkt}", wpkt);
+
+                WrappedPacket wrapped = wpkt.Packet;
+                Context context = new(wrapped.ClientId, rsa, ClientState, wps);
+
+                if (wpkt.IsMetaPacket)
                 {
-                    WrappedPacketContainer wpkt = await wps.ReadAsync();
-                    Log.Information("Read wrapped packet: {wpkt}", wpkt);
+                    using MemoryStream memoryStream = new(wrapped.GetOrCreatePacketByteArray(), false);
+                    using BinaryReader binaryReader = new(memoryStream);
 
-                    WrappedPacket wrapped = wpkt.Packet;
-
+                    await metaRouter.HandlePacketAsync(context, binaryReader);
+                }
+                else
+                {
                     using MemoryStream memoryStream = new(wrapped.GetOrCreatePacketByteArray(), false);
 
-                    Context context = new(wrapped.ClientId, rsa, ClientState, wps, eventSocket);
                     await gameRouter.HandlePacketAsync(context, memoryStream, (uint)wrapped.Data.Length);
-                    await wps.SendAckAsync(wpkt);
                 }
-            }
-            catch (Exception e)
-            {
-                Log.Error(e, "Exception in wrapped packet stream");
+
+                await wps.SendAckAsync(wpkt);
             }
         }
 
@@ -72,35 +75,54 @@ namespace Currycomb.AuthService
                 .AddJsonFile($"cfg.svc_auth.{env}.json", true, true)
                 // Env vars and command line args override JSON configs
                 .AddEnvironmentVariables($"CC_CFG_")
-                .AddEnvironmentVariables($"CC_CFG_{env}_")
                 .AddCommandLine(args)
                 .Build();
 
-            var appConfig = configuration.Get<AppConfiguration>();
-            Log.Information("Loaded configuration: {@appConfig}", appConfig);
+            Log.Information("Loaded configuration: {@appConfig}", configuration.GetDebugView());
 
-            // TODO: Implement config file
-            CancellationToken ct = new();
-            ClientWebSocket eventSocket = new();
+            GatewayConfiguration gateway = configuration
+                .GetSection(nameof(GatewayConfiguration))
+                .Get<GatewayConfiguration>();
 
-            Uri broadcastUri = appConfig.Broadcast.Uri;
-            Uri gatewayUri = appConfig.Gateway.Uri;
-
-            await eventSocket.ConnectAsync(broadcastUri, ct);
-            Log.Information("Connecting to BroadcastService @ {@wsUri}", broadcastUri);
+            if (gateway == null)
+            {
+                Log.Fatal("No gateway configuration found.");
+                Log.CloseAndFlush();
+                return;
+            }
 
             while (true)
             {
-                Log.Information("Connecting to Gateway @ {@gatewayUri}", gatewayUri);
-                using TcpClient client = new TcpClient(gatewayUri.Host, gatewayUri.Port);
-                Log.Information("Connected");
+                CancellationTokenSource cts = new();
 
-                WrappedPacketStream wps = new(client.GetStream(), MsManager);
-                CancellationTokenSource wpsCts = new();
-                Task wpsTask = wps.RunAsync(wpsCts.Token);
+                try
+                {
+                    Log.Information("Attempting to connect to Gateway @ {gatewayHost}:{gatewayPort}", gateway.Host, gateway.Port);
+                    using TcpClient client = new TcpClient(gateway.Host, gateway.Port);
+                    Log.Information("Connected");
 
-                await HandleWrappedPacketStream(eventSocket, wps);
-                wpsCts.Cancel();
+                    WrappedPacketStream wps = new(client.GetStream(), MsManager);
+
+                    await await Task.WhenAny(
+                        wps.RunAsync(cts.Token),
+                        HandleWrappedPacketStream(wps, cts.Token)
+                    );
+                }
+                // No connection could be made because the target machine actively refused it.
+                catch (SocketException e) when (e.ErrorCode == 10061) { }
+                // An existing connection was forcibly closed by the remote host.
+                catch (IOException e) when (e.InnerException is SocketException se && se.ErrorCode == 10054) { }
+                // We cancelled things.
+                catch (OperationCanceledException) { }
+                // Unknown exception.
+                catch (Exception e)
+                {
+                    Log.Error(e, "Hit an unknown exception, reconnecting in {delay}.", gateway.ReconnectDelay);
+                }
+
+                cts.Cancel();
+
+                await Task.Delay(gateway.ReconnectDelay);
             }
         }
     }

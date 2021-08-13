@@ -1,25 +1,19 @@
 using System;
-using System.IO;
-using System.Numerics;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
-using Currycomb.Common.Game;
-using Currycomb.Common.Network;
-using Currycomb.Common.Network.Game;
-using Currycomb.Common.Network.Game.Packets;
 using Serilog;
 
 namespace Currycomb.PlayService
 {
     public class GameInstance
     {
-        private Channel<IGameEvent> _eventQueue;
+        private readonly Channel<IGameEvent> _eventQueue;
 
-        private ChannelWriter<IGameEvent> _eventWriter;
-        private ChannelReader<IGameEvent> _eventReader;
+        private readonly ChannelWriter<IGameEvent> _eventWriter;
+        private readonly ChannelReader<IGameEvent> _eventReader;
 
-        public ChannelWriter<IGameEvent> EventWriter;
+        public readonly ChannelWriter<IGameEvent> EventWriter;
 
         public GameInstance()
         {
@@ -38,6 +32,7 @@ namespace Currycomb.PlayService
             {
                 while (_eventReader.TryRead(out var gameEvent))
                 {
+                    Log.Information("Event: {event}", gameEvent);
                     switch (gameEvent)
                     {
                         case EvtPlayerConnected pc:

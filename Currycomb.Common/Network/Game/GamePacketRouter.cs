@@ -88,16 +88,18 @@ namespace Currycomb.Common.Network.Game
             if (Handlers.Length <= metaBits)
                 throw new Exception($"Packet {id} is not handled by this handler.");
 
-            if (Handlers[metaBits] == null)
+            PacketFunc[] bitHandlers = Handlers[metaBits];
+            if (bitHandlers == null)
                 throw new Exception($"Packet {id} is not handled by this handler.");
 
-            if (Handlers[metaBits].Length <= pktId)
+            if (bitHandlers.Length <= pktId)
                 throw new Exception($"Packet {id} is not handled by this handler.");
 
-            if (Handlers[metaBits][pktId] == null)
+            PacketFunc handler = bitHandlers[pktId];
+            if (handler == null)
                 throw new Exception($"Packet {id} is not handled by this handler.");
 
-            await Handlers[metaBits][pktId](context, packet);
+            await handler(context, packet);
         }
     }
 }

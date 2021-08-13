@@ -1,9 +1,8 @@
 ﻿using Currycomb.Common.Network;
 using Serilog;
 using System;
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 
 namespace Currycomb.Gateway.Network.Services
@@ -15,17 +14,17 @@ namespace Currycomb.Gateway.Network.Services
 
         public Task RunAsync(CancellationToken cancellationToken = default) => ServiceStream.RunAsync();
 
-        public async ValueTask HandleAsync(WrappedPacket packet)
+        public async ValueTask HandleAsync(bool isMeta, WrappedPacket packet)
         {
-            await ServiceStream.SendWaitAsync(packet, false);
-            Log.Information($"{packet.ClientId} sent packet to PlayService");
+            await ServiceStream.SendAsync(packet, isMeta);
+            Log.Information("PlayService.HandleAsync | Client {@clientId} sent packet to PlayService", packet.ClientId);
         }
 
-        public async IAsyncEnumerable<WrappedPacketContainer> ReadPacketsAsync([EnumeratorCancellation] CancellationToken ct = default)
+        public async Task ReadPacketsToChannelAsync(ChannelWriter<WrappedPacketContainer> channel, CancellationToken ct = default)
         {
             while (!ct.IsCancellationRequested)
             {
-                yield return await ServiceStream.ReadAsync(true, ct);
+                await channel.WriteAsync(await ServiceStream.ReadAsync(true, ct), ct);
             }
         }
 

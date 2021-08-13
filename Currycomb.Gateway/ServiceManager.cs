@@ -2,7 +2,6 @@ using System.Threading.Tasks;
 using Serilog;
 using Currycomb.Common.Network;
 using System.Threading.Channels;
-using Currycomb.Common.Network.Broadcast;
 using System.Threading;
 using System;
 
@@ -13,7 +12,7 @@ namespace Currycomb.Gateway
     {
         record ActiveService(Guid Id, TService Service, TaskCompletionSource Invalidated, CancellationTokenSource Cts, Task RunTask);
 
-        private static readonly ILogger log = Log
+        private static readonly ILogger _log = Log
             .ForContext<ServiceManager<TService>>()
             .ForContext("service", typeof(TService).Name);
 
@@ -26,16 +25,20 @@ namespace Currycomb.Gateway
         public ValueTask AddServiceInstance(TService service)
             => _serviceQueue.Writer.WriteAsync(service);
 
-        public ValueTask HandleAsync(WrappedPacket packet)
-            => WithService(x => x.Service.HandleAsync(packet));
+        public ValueTask HandleAsync(bool requireDelivery, bool isMeta, WrappedPacket packet)
+            => WithService(requireDelivery, x => x.Service.HandleAsync(isMeta, packet));
 
-        public ValueTask HandleAsync(ComEvent evt)
-            => WithService(x => x.Service.HandleAsync(evt));
-
-        private async ValueTask WithService(Func<ActiveService, ValueTask> func, CancellationToken ct = default)
+        private async ValueTask WithService(bool requireDelivery, Func<ActiveService, ValueTask> func, CancellationToken ct = default)
         {
             while (!ct.IsCancellationRequested)
             {
+                // If we're not required to send it out and we don't have an instane of the service on hand, don't bother.
+                if (!requireDelivery && _activeService == null && _serviceQueue.Reader.Count == 0)
+                {
+                    Log.Information("Dropping packet as no {@type} is connected and 'requireDelivery' is {requireDelivery}.", typeof(TService), requireDelivery);
+                    return;
+                }
+
                 ActiveService act = await GetActiveService(ct);
 
                 if (ct.IsCancellationRequested)
@@ -48,7 +51,7 @@ namespace Currycomb.Gateway
                 }
                 catch (Exception e)
                 {
-                    log.Error(e, "Failed to handle packet, yeeting {@type} instance [{@id}] and retrying.", typeof(TService), act.Id);
+                    _log.Error(e, "Failed to handle packet, yeeting {@type} instance [{@id}] and retrying.", typeof(TService), act.Id);
                     InvalidateActiveService();
                 }
             }
@@ -60,28 +63,30 @@ namespace Currycomb.Gateway
             {
                 if (_activeService != null)
                 {
-                    log.Information("{@service} {0}", _activeService.RunTask.Status);
+                    _log.ForContext("status", _activeService.RunTask.Status)
+                        .Information("{@service} {@status}");
+
                     return _activeService;
                 }
 
                 _activeServiceQueued ??= _serviceQueue.Reader.ReadAsync(ct).AsTask();
             }
 
-            log.Warning("No active {@service} found, awaiting a new instance.");
+            _log.Warning("No active {@service} found, awaiting a new instance.");
             TService service = await _activeServiceQueued;
 
             lock (_activeServiceSwapLock)
             {
                 if (_activeService == null)
                 {
-                    log.Information("New active {@service} found and swapped in.");
+                    _log.Information("New active {@service} found and swapped in.");
 
                     CancellationTokenSource cts = new();
                     return _activeService = new(Guid.NewGuid(), service, new(), cts, service.RunAsync(cts.Token));
                 }
             }
 
-            log.Information("{@service} was already swapped in.");
+            _log.Information("{@service} was already swapped in.");
 
             await _serviceQueue.Writer.WriteAsync(service, ct);
             return await GetActiveService(ct);
@@ -94,7 +99,7 @@ namespace Currycomb.Gateway
                 if (_activeService == null)
                     return;
 
-                log.Warning("Invalidating {@service}", _activeService.Service);
+                _log.Warning("Invalidating {@service}", _activeService.Service);
                 _activeServiceQueued = null;
 
                 _activeService.Invalidated.SetResult();
@@ -106,28 +111,31 @@ namespace Currycomb.Gateway
 
         public async Task ReadPacketsToChannelAsync(ChannelWriter<WrappedPacketContainer> channel, CancellationToken ct = default)
         {
-            log.Information("Started Reading Packets from {service}");
-            ActiveService service = await GetActiveService(ct);
-
-            // Read all incoming packets, if any exist
-            var mixedCts = CancellationTokenSource.CreateLinkedTokenSource(ct, service.Cts.Token);
-            try
+            while (!ct.IsCancellationRequested)
             {
-                log.Debug("Reading from service {@service} to channel");
-                await service.Service.ReadPacketsToChannelAsync(channel, mixedCts.Token);
+                _log.Information("Started Reading Packets from {service}");
+                ActiveService service = await GetActiveService(ct);
+
+                // Read all incoming packets, if any exist
+                var mixedCts = CancellationTokenSource.CreateLinkedTokenSource(ct, service.Cts.Token);
+                try
+                {
+                    _log.Debug("ServiceManager | Reading from service {@service} to channel");
+                    await service.Service.ReadPacketsToChannelAsync(channel, mixedCts.Token);
+                }
+                catch (OperationCanceledException) { /* this just means we're done */ }
+
+                _log.Debug("ServiceManager | Finished reading from service {@service}");
+
+                if (ct.IsCancellationRequested)
+                    return;
+
+                _log.Debug("ServiceManager | Waiting for {@service} to be invalidated");
+                // If we run out of packets we don't want to retry until the service is invalidated
+                await service.Invalidated.Task;
+
+                _log.Debug("ServiceManager | {@service} was invalidated");
             }
-            catch (OperationCanceledException) { /* this just means we're done */ }
-
-            log.Debug("Finished reading from service {@service}");
-
-            if (ct.IsCancellationRequested)
-                return;
-
-            log.Debug("Waiting for {@service} to be invalidated");
-            // If we run out of packets we don't want to retry until the service is invalidated
-            await service.Invalidated.Task;
-
-            log.Debug("{@service} was invalidated");
         }
     }
 }

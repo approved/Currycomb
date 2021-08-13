@@ -11,21 +11,21 @@ namespace Currycomb.Gateway
     {
         private readonly ClientCollection _clients;
 
-        private readonly PacketToServiceRouter _c2sPackets;
-        private readonly PacketToClientRouter _s2cPackets;
-        private readonly PacketToMetaRouter _s2mPackets;
+        private readonly PacketToServiceRouter _toService;
+        private readonly PacketToClientRouter _toClient;
+        private readonly PacketToMetaRouter _toMeta;
 
         private readonly IService[] _services;
 
-        public PacketRouter(ClientCollection clients, PacketToServiceRouter c2sPackets, PacketToClientRouter s2cPackets, PacketToMetaRouter s2mPackets)
+        public PacketRouter(ClientCollection clients, PacketToServiceRouter toService, PacketToClientRouter toClient, PacketToMetaRouter toMeta)
         {
             _clients = clients;
 
-            _c2sPackets = c2sPackets;
-            _s2cPackets = s2cPackets;
-            _s2mPackets = s2mPackets;
+            _toService = toService;
+            _toClient = toClient;
+            _toMeta = toMeta;
 
-            _services = c2sPackets.Services;
+            _services = toService.Services;
         }
 
         public async Task RoutePacketFromService(WrappedPacketContainer wpc, CancellationToken ct = default)
@@ -41,14 +41,24 @@ namespace Currycomb.Gateway
                 return;
             }
 
-            await (wpc.IsMetaPacket switch
+            if (wpc.IsMetaPacket)
             {
-                true => _s2mPackets.HandlePacketAsync(client, packet),
-                false => _s2cPackets.HandlePacketAsync(client, packet)
-            });
+                Log.Information("Handling meta packet for client {@client}", packet.ClientId);
+                await _toMeta.HandlePacketAsync(client, packet);
+
+                Log.Information("Dispatching meta packet for client {@client}", packet.ClientId);
+                await _toService.HandleMetaAsync(packet);
+
+                Log.Information("Done with meta packet for client {@client}", packet.ClientId);
+            }
+            else
+            {
+                Log.Information("Handling game packet for client {@client}", packet.ClientId);
+                await _toClient.HandlePacketAsync(client, packet);
+            }
         }
 
-        public Task RoutePacketFromClient(bool authenticated, WrappedPacket packet, CancellationToken ct = default)
-            => _c2sPackets.DispatchAsync(authenticated, packet);
+        public ValueTask RoutePacketFromClient(bool authenticated, WrappedPacket packet, CancellationToken ct = default)
+            => _toService.HandleGameAsync(authenticated, packet);
     }
 }

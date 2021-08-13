@@ -15,13 +15,11 @@ namespace Currycomb.Gateway.Network.Services
         public void Dispose() => ServiceStream.Dispose();
         public Task RunAsync(CancellationToken cancellationToken = default) => ServiceStream.RunAsync(cancellationToken);
 
-        public async ValueTask HandleAsync(WrappedPacket packet)
+        public async ValueTask HandleAsync(bool isMeta, WrappedPacket packet)
         {
             Guid id = packet.ClientId;
-            Log.Warning($"{id} attempting to complete handshake");
-
-            await ServiceStream.SendWaitAsync(packet, false);
-            Log.Information($"{id} sent packet to AuthService");
+            await ServiceStream.SendWaitAsync(packet, isMeta);
+            Log.Information("AuthService.HandleAsync | Client {@clientId} sent packet to AuthService", id);
         }
 
         public async Task ReadPacketsToChannelAsync(ChannelWriter<WrappedPacketContainer> channel, CancellationToken ct = default)

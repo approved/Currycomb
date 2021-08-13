@@ -34,55 +34,52 @@ namespace Currycomb.Common.Network.Meta
                 return this;
             }
 
-            public MetaPacketRouter<TContext> Build() => new MetaPacketRouter<TContext>(Handlers.Select(x => (x.Key, x.Value)).ToArray());
+            public MetaPacketRouter<TContext> Build(bool throwOnUnknown = false)
+                => new MetaPacketRouter<TContext>(throwOnUnknown, Handlers.Select(x => (x.Key, x.Value)).ToArray());
         }
 
         public static Builder New() => new Builder();
 
         public PacketFunc[]? Handlers;
+        private readonly bool _throwOnUnknown;
 
-        public MetaPacketRouter(params (MetaPacketId Id, PacketFunc Func)[] handlers)
+        public MetaPacketRouter(bool throwOnUnknown, params (MetaPacketId Id, PacketFunc Func)[] handlers)
         {
+            _throwOnUnknown = throwOnUnknown;
             if (handlers.Length == 0)
                 return;
 
-            var currentMetaMaxPktId = handlers.Max(x => x.Id.ToRaw());
+            var currentMetaMaxPktId = handlers.Max(x => (int)x.Id);
 
             Handlers = new PacketFunc[currentMetaMaxPktId + 1];
 
             foreach (var handler in handlers)
-                Handlers[handler.Id.ToRaw()] = handler.Func;
+                Handlers[(int)handler.Id] = handler.Func;
         }
 
-        public async Task HandlePacketAsync(TContext context, BinaryReader reader)
+        public Task HandlePacketAsync(TContext context, BinaryReader reader)
+            => HandlePacketAsync(context, MetaPacket.Read(reader));
+
+        public async Task HandlePacketAsync(TContext context, MetaPacket<IMetaPacket> meta)
         {
-            MetaPacketHeader header = MetaPacketHeader.Read(reader);
-            Log.Information($"Read packet header: {header}");
+            Log.Information("Handling MetaPacket {@meta}", meta);
 
-            MetaPacketId id = MetaPacketIdExt.FromRaw(header.PacketId);
-            Log.Information($"Read packet id: {id}");
+            MetaPacketHeader header = meta.Header;
+            IMetaPacket packet = meta.Packet;
 
-            IMetaPacket packet = MetaPacketReader.Read(id, reader);
-            Log.Information($"Read packet: {packet}");
-
-            await HandlePacketAsync(context, id, packet);
-        }
-
-        public async Task HandlePacketAsync(TContext context, MetaPacketId id, IMetaPacket packet)
-        {
             // TODO: Check if try-catch is faster than bounds checking before access
-            int pktId = (int)id.ToRaw();
+            int pktId = (int)header.PacketId;
 
-            if (Handlers == null)
-                throw new Exception($"Packet {id} is not handled by this handler.");
+            if (Handlers != null && Handlers.Length > pktId && Handlers[pktId] is PacketFunc handler)
+            {
+                await handler(context, packet);
+                return;
+            }
 
-            if (Handlers.Length <= pktId)
-                throw new Exception($"Packet {id} is not handled by this handler.");
+            Log.Debug("MetaPacket {id} is not handled by this handler.", header.PacketId);
 
-            if (Handlers[pktId] == null)
-                throw new Exception($"Packet {id} is not handled by this handler.");
-
-            await Handlers[pktId](context, packet);
+            if (_throwOnUnknown)
+                throw new Exception($"MetaPacket {header} is not handled by this handler.");
         }
     }
 }

@@ -50,7 +50,7 @@ namespace Currycomb.Common.Network
             {
                 // TODO: Handle errors
 
-                log.Information("Waiting for incoming packet");
+                log.Information("WPS.RunAsync | Waiting for incoming packet (idle)");
 
                 await _outputStream.ReadAsync(metaBuffer.AsMemory(0, 1), ct);
                 byte meta = metaBuffer[0];
@@ -61,7 +61,7 @@ namespace Currycomb.Common.Network
                     byte ackVal = (byte)_outputStream.ReadByte();
                     Guid ackGuid = new Guid(ackBuffer);
 
-                    log.Information($"ACK for packet received: {ackGuid}");
+                    log.Information($"WPS.RunAsync | ACK for packet received: {ackGuid}");
 
                     if (!_blocking.TryRemove(ackGuid, out var tcs) || !tcs.TrySetResult(ackVal))
                     {
@@ -74,9 +74,9 @@ namespace Currycomb.Common.Network
                 Guid? acknowledgement = (meta & META_ACK_REQ) != 0 ? await _outputStream.ReadGuidAsync() : null;
                 bool isInternalPacket = (meta & META_INT_PKT) != 0;
 
-                log.Information("Reading incoming wrapped packet {ack}", acknowledgement);
+                log.Information("WPS.RunAsync | Reading incoming wrapped packet {ack}", acknowledgement);
                 await _queuedPackets.Writer.WriteAsync(new WrappedPacketContainer(acknowledgement, isInternalPacket, await WrappedPacket.ReadAsync(_outputStream)), ct);
-                log.Information($"Queued incoming wrapped packet");
+                log.Information($"WPS.RunAsync | Queued incoming wrapped packet");
             }
         }
 

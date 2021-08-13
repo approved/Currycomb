@@ -1,7 +1,7 @@
 {
     "GatewayConfiguration": {
         "Host": "localhost",
-        "Port": 10001,
-        "ReconnectDelay": "00:00:05"
+        "Port": 10003,
+        "ReconnectDelay": "00:00:05",
     }
 }

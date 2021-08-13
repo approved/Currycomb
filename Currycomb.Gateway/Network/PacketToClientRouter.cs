@@ -3,7 +3,7 @@ using Currycomb.Common.Network;
 using Currycomb.Gateway.ClientData;
 using Serilog;
 
-namespace Currycomb.Gateway
+namespace Currycomb.Gateway.Network
 {
     public class PacketToClientRouter
     {
