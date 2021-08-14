@@ -1,6 +1,6 @@
 using System.IO;
 
-namespace Currycomb.Common.Network.Game.Packets.Types
+namespace Currycomb.Common.Game
 {
     public struct InventorySlot
     {

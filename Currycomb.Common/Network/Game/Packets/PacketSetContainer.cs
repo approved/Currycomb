@@ -1,5 +1,5 @@
 using System.IO;
-using Currycomb.Common.Network.Game.Packets.Types;
+using Currycomb.Common.Game;
 
 namespace Currycomb.Common.Network.Game.Packets
 {
