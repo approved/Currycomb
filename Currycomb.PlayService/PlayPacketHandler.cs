@@ -14,6 +14,7 @@ namespace Currycomb.PlayService
             .On<PacketJoinGame>(PacketJoinGame)
             .On<PacketSpawnPosition>(PacketSpawnPosition)
             .On<PacketPlayerPosition>(PacketPlayerPosition)
+            .On<PacketClientKeepAlive>(PacketClientKeepAlive)
             .Build();
 
         private async Task PacketJoinGame(Context c, PacketJoinGame pkt)
@@ -33,6 +34,11 @@ namespace Currycomb.PlayService
             await c.SendPacket(new PacketPlayerPosition(0, 0, 0, 0, 0, 0, 0, false));
 
             Log.Information("Replied to PacketPlayerPosition");
+        }
+
+        private async Task PacketClientKeepAlive(Context c, PacketClientKeepAlive pkt)
+        {
+            Log.Information("Received PacketClientKeepAlive");
         }
     }
 }

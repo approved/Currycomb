@@ -152,6 +152,7 @@ namespace Currycomb.PlayService
             SendPacket(clientId, new PacketSpawnPosition(new(10, 65, 10), 0.0f));
             SendPacket(clientId, new PacketPlayerPosition(0.0, 64.0, 0.0, 0, 0, 0x1f, 0, false));
 
+            SendPacket(clientId, new PacketServerKeepAlive());
             //SendPacket(clientId, new PacketDisconnect("Should be in-game"));
         }
 

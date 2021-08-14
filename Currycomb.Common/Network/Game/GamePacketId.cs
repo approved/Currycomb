@@ -44,6 +44,8 @@ namespace Currycomb.Common.Network.Game
 
         ClientCustomPayload   = 0x0A | BoundTo.Server | State.Play,
 
+        ClientKeepAlive       = 0x0F | BoundTo.Server | State.Play,
+
         ClientPlayerAbilities = 0x19 | BoundTo.Server | State.Play,
         #endregion
 
@@ -77,6 +79,7 @@ namespace Currycomb.Common.Network.Game
         DisconnectPlay        = 0x1A | BoundTo.Client | State.Play,
         EntityEvent           = 0x1B | BoundTo.Client | State.Play,
 
+        ServerKeepAlive       = 0x21 | BoundTo.Client | State.Play,
         WorldChunk            = 0x22 | BoundTo.Client | State.Play,
         WorldEvent            = 0x23 | BoundTo.Client | State.Play,
         WorlParticle          = 0x24 | BoundTo.Client | State.Play,

@@ -44,6 +44,8 @@ namespace Currycomb.Common.Network.Game
 
             { GamePacketId.ClientCustomPayload, typeof(PacketClientCustomPayload) },
 
+            { GamePacketId.ClientKeepAlive, typeof(PacketClientKeepAlive) },
+
             { GamePacketId.ClientPlayerAbilities, typeof(PacketClientPlayerAbilities) },
             #endregion
 
@@ -59,6 +61,7 @@ namespace Currycomb.Common.Network.Game
             { GamePacketId.DisconnectPlay, typeof(PacketDisconnect) },
             { GamePacketId.EntityEvent, typeof(PacketEntityEvent) },
 
+            { GamePacketId.ServerKeepAlive, typeof(PacketServerKeepAlive) },
             { GamePacketId.WorldChunk, typeof(PacketWorldChunk) },
 
             { GamePacketId.UpdateLight, typeof(PacketUpdateLight) },
