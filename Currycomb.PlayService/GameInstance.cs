@@ -75,27 +75,28 @@ namespace Currycomb.PlayService
             Log.Information("GameInstance.OnPlayerConnected: {@clientId}", clientId);
 
             SendPacket(clientId, new PacketJoinGame(
-                EntityID: 45,
+                EntityID: 0,
                 IsHardcore: false,
                 GameMode: GameMode.Creative,
                 PreviousGameMode: GameMode.None,
-                WorldNames: new[] { "world" },
-                SpawnWorldIdentifier: "world",
-                WorldSeed: 0,
-                RenderDistance: 32,
+                WorldNames: new[] { "minecraft:overworld" },
+                SpawnWorldIdentifier: "minecraft:overworld",
+                WorldSeed: 1234567890123456,
+                MaxPlayers: 100,
+                RenderDistance: 10,
                 ReducedDebugInfo: false,
-                EnableRespawnScreen: false,
+                EnableRespawnScreen: true,
                 IsDebug: false,
                 IsFlat: false));
 
             SendPacket(clientId, new PacketServerCustomPayload("minecraft:brand", Encoding.UTF8.GetBytes("currycomb")));
             SendPacket(clientId, new PacketChangeDifficulty(Difficulty.Easy, true));
-            SendPacket(clientId, new PacketServerPlayerAbilities(new()));
+            //SendPacket(clientId, new PacketServerPlayerAbilities(new()));
             SendPacket(clientId, new PacketSetHeldItem(0));
             SendPacket(clientId, new PacketUpdateRecipes());
-            SendPacket(clientId, new PacketUpdateTags());
-            SendPacket(clientId, new PacketEntityEvent(45, 24));
-            SendPacket(clientId, new PacketCommandList());
+            //SendPacket(clientId, new PacketUpdateTags());
+            SendPacket(clientId, new PacketEntityEvent(0, 24));
+            //SendPacket(clientId, new PacketCommandList());
             SendPacket(clientId, new PacketRecipe(RecipePacketState.Init, new()));
             SendPacket(clientId, new PacketPlayerPosition(0.0, 64.0, 0.0, 0, 0, 0x1f, 0, false));
 
@@ -104,7 +105,7 @@ namespace Currycomb.PlayService
                 Actions: new IPlayerInfoAction[] {
                     new AddPlayerInfoAction(
                         UUID: clientId,
-                        Player: "TestAccount123",
+                        Player: "Fiskpinne",
                         Properties: Array.Empty<InfoActionProperty>(),
                         GameMode: GameMode.Survival,
                         Ping: 0)
@@ -118,27 +119,27 @@ namespace Currycomb.PlayService
                         Ping: 0)
                 }));
 
-            SendPacket(clientId, new PacketChunkCacheCenter(0, 0));
+            //SendPacket(clientId, new PacketChunkCacheCenter(0, 0));
 
-            SendPacket(clientId, new PacketUpdateLight(
-                ChunkX: 0,
-                ChunkZ: 0,
-                TrustEdges: true,
-                SkyLightMask: Array.Empty<long>(),
-                BlockLightMask: Array.Empty<long>(),
-                EmptySkyLightMask: Array.Empty<long>(),
-                EmptyBlockLightMask: Array.Empty<long>(),
-                SkyLight: Array.Empty<byte[]>(),
-                BlockLight: Array.Empty<byte[]>()));
+            //SendPacket(clientId, new PacketUpdateLight(
+            //    ChunkX: 0,
+            //    ChunkZ: 0,
+            //    TrustEdges: true,
+            //    SkyLightMask: Array.Empty<long>(),
+            //    BlockLightMask: Array.Empty<long>(),
+            //    EmptySkyLightMask: Array.Empty<long>(),
+            //    EmptyBlockLightMask: Array.Empty<long>(),
+            //    SkyLight: Array.Empty<byte[]>(),
+            //    BlockLight: Array.Empty<byte[]>()));
 
-            SendPacket(clientId, new PacketWorldChunk(
-                ChunkX: 0,
-                ChunkZ: 0,
-                PrimaryBitMask: Array.Empty<long>(),
-                Heightmaps: x => x.Compound(x => x.Write("MOTION_BLOCKING", Array.Empty<byte>())),
-                Biomes: Array.Empty<int>(),
-                Data: Array.Empty<byte>(),
-                BlockEntities: Array.Empty<Action<Nbt.CompoundWriter<Nbt.Cloak>>>()));
+            //SendPacket(clientId, new PacketWorldChunk(
+            //    ChunkX: 0,
+            //    ChunkZ: 0,
+            //    PrimaryBitMask: Array.Empty<long>(),
+            //    Heightmaps: x => x.Compound(x => x.Write("MOTION_BLOCKING", Array.Empty<byte>())),
+            //    Biomes: Array.Empty<int>(),
+            //    Data: Array.Empty<byte>(),
+            //    BlockEntities: Array.Empty<Action<Nbt.CompoundWriter<Nbt.Cloak>>>()));
 
             SendPacket(clientId, new PacketSetContainer(0, 0, Array.Empty<InventorySlot>(), new InventorySlot { Present = false }));
             SendPacket(clientId, new PacketSetTime(0, 0));
@@ -147,7 +148,6 @@ namespace Currycomb.PlayService
             SendPacket(clientId, new PacketPlayerPosition(0.0, 64.0, 0.0, 0, 0, 0x1f, 0, false));
 
             SendPacket(clientId, new PacketServerKeepAlive());
-            //SendPacket(clientId, new PacketDisconnect("Should be in-game"));
         }
 
         private bool SendPacket<T>(Guid clientId, T packet) where T : IGamePacket

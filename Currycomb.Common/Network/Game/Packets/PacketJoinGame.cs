@@ -15,6 +15,7 @@ namespace Currycomb.Common.Network.Game.Packets
         // Dimension
         string SpawnWorldIdentifier,
         long WorldSeed,
+        int MaxPlayers,
         int RenderDistance,
         bool ReducedDebugInfo,
         bool EnableRespawnScreen,
@@ -49,6 +50,24 @@ namespace Currycomb.Common.Network.Game.Packets
                 .Write("ultrawarm", 0)
                 .Write("has_ceiling", 0);
 
+            Action<Nbt.CompoundWriter<Nbt.Cloak>> plainsBiome = x => x
+            .Write("precipitation", "rain")
+            .Compound("effects", x => x
+                .Write("sky_color", 0x6EB1FF)
+                .Write("water_fog_color", 0x50533)
+                .Write("fog_color", 0xC0D8FF)
+                .Write("water_color", 0x3F76E4)
+                .Compound("mood_sound", x => x
+                    .Write("tick_delay", 6000)
+                    .Write("offset", 2.0d)
+                    .Write("sound", "minecraft:ambient.cave")
+                    .Write("block_search_extent", 8)))
+                .Write("depth", 0.125f)
+                .Write("temperature", 2.0f)
+                .Write("scale", 0.05f)
+                .Write("downfall", 0.0f)
+                .Write("category", "plains");
+
             Nbt.Writer.ToBinaryWriter(writer)
                 .Compound(x => x
                     .Compound("minecraft:dimension_type", x => x
@@ -57,14 +76,22 @@ namespace Currycomb.Common.Network.Game.Packets
                             .Compound(x => x
                                 .Write("name", "minecraft:overworld")
                                 .Write("id", 0)
-                                .Compound("element", x => x.WithCloak(dimension))))));
+                                .Compound("element", x => x.WithCloak(dimension)))))
+                    .Compound("minecraft:worldgen/biome", x => x
+                        .Write("type", "minecraft:worldgen/biome")
+                        .ListCompound("value", 1, x => x
+                            .Compound(x => x
+                                .Write("name", "minecraft:plains")
+                                .Write("id", 0)
+                                .Compound("element", x => x.WithCloak(plainsBiome))))));
 
             Nbt.Writer.ToBinaryWriter(writer)
                 .Compound(x => x.WithCloak(dimension));
 
             writer.Write(SpawnWorldIdentifier);
-            writer.Write(WorldSeed);
-            writer.Write7BitEncodedInt(0);
+            //writer.Write(BitConverter.GetBytes(WorldSeed));
+            writer.Write(new byte[] { 0x83, 0xAA, 0x66, 0xF8, 0x2B, 0x9C, 0x81, 0xD2 });
+            writer.Write7BitEncodedInt(MaxPlayers);
             writer.Write7BitEncodedInt(RenderDistance);
             writer.Write(ReducedDebugInfo);
             writer.Write(EnableRespawnScreen);

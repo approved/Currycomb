@@ -19,7 +19,7 @@ namespace Currycomb.PlayService
 
         private async Task PacketJoinGame(Context c, PacketJoinGame pkt)
         {
-            await c.SendPacket(new PacketJoinGame(0, false, GameMode.Creative, GameMode.None, new[] { "world" }, "world", 0, 32, false, false, false, false));
+            await c.SendPacket(new PacketJoinGame(0, false, GameMode.Creative, GameMode.None, new[] { "world" }, "world", 0, 100, 32, false, false, false, false));
         }
 
         private async Task PacketSpawnPosition(Context c, PacketSpawnPosition pkt)
