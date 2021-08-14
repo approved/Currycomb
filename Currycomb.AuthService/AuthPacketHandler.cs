@@ -26,7 +26,7 @@ namespace Currycomb.AuthService
         private async Task PacketLoginStart(Context c, PacketLoginStart pkt)
         {
             // TODO: Configuration - we should allow toggling this somewhere
-            const bool useEncryption = true;
+            const bool useEncryption = false;
 
             if (useEncryption)
             {
