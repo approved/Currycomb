@@ -1,17 +1,13 @@
 using System;
-using System.Diagnostics;
 using System.Text;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using Currycomb.Common.Game;
-using Currycomb.Common.Game.Entity;
 using Currycomb.Common.Network;
 using Currycomb.Common.Network.Game;
 using Currycomb.Common.Network.Game.Packets;
-using Currycomb.Common.Network.Game.Packets.Types;
 using Currycomb.Common.Network.Game.Packets.Types.Player;
-using fNbt;
 using Microsoft.IO;
 using Serilog;
 
@@ -102,16 +98,16 @@ namespace Currycomb.PlayService
             SendPacket(clientId, new PacketCommandList());
             SendPacket(clientId, new PacketRecipe(RecipePacketState.Init, new()));
             SendPacket(clientId, new PacketPlayerPosition(0.0, 64.0, 0.0, 0, 0, 0x1f, 0, false));
-            
+
             SendPacket(clientId, new PacketPlayerInfo(
-                Action: PlayerInfoAction.AddPlayer, 
-                Actions: new IPlayerInfoAction[] { 
+                Action: PlayerInfoAction.AddPlayer,
+                Actions: new IPlayerInfoAction[] {
                     new AddPlayerInfoAction(
-                        UUID: clientId, 
-                        Player: "TestAccount123", 
-                        Properties: Array.Empty<InfoActionProperty>(), 
-                        GameMode: GameMode.Survival, 
-                        Ping: 0) 
+                        UUID: clientId,
+                        Player: "TestAccount123",
+                        Properties: Array.Empty<InfoActionProperty>(),
+                        GameMode: GameMode.Survival,
+                        Ping: 0)
                 }));
 
             SendPacket(clientId, new PacketPlayerInfo(
@@ -139,12 +135,10 @@ namespace Currycomb.PlayService
                 ChunkX: 0,
                 ChunkZ: 0,
                 PrimaryBitMask: Array.Empty<long>(),
-                Heightmaps: new NbtCompound(string.Empty, new[] { new NbtByteArray("MOTION_BLOCKING") }),
+                Heightmaps: x => x.Compound(x => x.Write("MOTION_BLOCKING", Array.Empty<byte>())),
                 Biomes: Array.Empty<int>(),
                 Data: Array.Empty<byte>(),
-                BlockEntities: Array.Empty<NbtCompound>()));
-
-            // ChunkDataBulk
+                BlockEntities: Array.Empty<Action<Nbt.CompoundWriter<Nbt.Cloak>>>()));
 
             SendPacket(clientId, new PacketSetContainer(0, 0, Array.Empty<InventorySlot>(), new InventorySlot { Present = false }));
             SendPacket(clientId, new PacketSetTime(0, 0));
