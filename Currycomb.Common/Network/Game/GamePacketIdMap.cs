@@ -21,11 +21,11 @@ namespace Currycomb.Common.Network.Game
 
             #region Login - ServerBound
             { GamePacketId.LoginStart, typeof(PacketLoginStart) },
-            { GamePacketId.EncryptionResponse, typeof(PacketEncryptionResponse) },
+            { GamePacketId.ClientEncryption, typeof(PacketEncryptionResponse) },
             #endregion
 
             #region Login - ClientBound
-            { GamePacketId.EncryptionRequest, typeof(PacketEncryptionRequest) },
+            { GamePacketId.ServerEncryption, typeof(PacketEncryptionRequest) },
             { GamePacketId.LoginSuccess, typeof(PacketLoginSuccess) },
             #endregion
 
@@ -45,6 +45,9 @@ namespace Currycomb.Common.Network.Game
             { GamePacketId.ClientCustomPayload, typeof(PacketClientCustomPayload) },
 
             { GamePacketId.ClientKeepAlive, typeof(PacketClientKeepAlive) },
+
+            { GamePacketId.ClientMovePlayerPos, typeof(PacketClientMovePlayerPos) },
+            { GamePacketId.ClientMovePlayer, typeof(PacketClientMovePlayer) },
 
             { GamePacketId.ClientPlayerAbilities, typeof(PacketClientPlayerAbilities) },
             #endregion
