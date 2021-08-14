@@ -11,7 +11,7 @@ namespace Currycomb.Common.Network.Game.Packets
         }
     }
 
-    public record PacketChunkData(int ChunkX, int ChunkZ, long[] PrimaryBitMask, NbtCompound Heightmaps, int[] Biomes, byte[] Data, NbtCompound[] BlockEntities) : IGamePacket
+    public record PacketWorldChunk(int ChunkX, int ChunkZ, long[] PrimaryBitMask, NbtCompound Heightmaps, int[] Biomes, byte[] Data, NbtCompound[] BlockEntities) : IGamePacket
     {
         public void Write(BinaryWriter writer)
         {

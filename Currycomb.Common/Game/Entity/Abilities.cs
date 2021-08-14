@@ -2,13 +2,13 @@
 {
     public class Abilities
     {
-        public bool IsInvulnerable { get; set; }
-        public bool IsFlying { get; set; }
-        public bool CanFly { get; set; }
-        public bool CanBuild { get; set; }
-        public bool CanInstantBuild { get; set; }
-        public float FlySpeed { get; set; }
-        public float WalkSpeed { get; set; }
+        public bool IsInvulnerable { get; set; } = false;
+        public bool IsFlying { get; set; } = false;
+        public bool CanFly { get; set; } = false;
+        public bool CanBuild { get; set; } = false;
+        public bool CanInstantBuild { get; set; } = false;
+        public float FlySpeed { get; set; } = 0.05f;
+        public float WalkSpeed { get; set; } = 1.0f;
 
         // TODO: Write NBT Serializer
     }

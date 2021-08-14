@@ -10,6 +10,7 @@ using Currycomb.Common.Network;
 using Currycomb.Common.Network.Game;
 using Currycomb.Common.Network.Game.Packets;
 using Currycomb.Common.Network.Game.Packets.Types;
+using Currycomb.Common.Network.Game.Packets.Types.Player;
 using fNbt;
 using Microsoft.IO;
 using Serilog;
@@ -78,7 +79,7 @@ namespace Currycomb.PlayService
             Log.Information("GameInstance.OnPlayerConnected: {@clientId}", clientId);
 
             SendPacket(clientId, new PacketJoinGame(
-                EntityID: 0,
+                EntityID: 45,
                 IsHardcore: false,
                 GameMode: GameMode.Creative,
                 PreviousGameMode: GameMode.None,
@@ -92,16 +93,36 @@ namespace Currycomb.PlayService
                 IsFlat: false));
 
             SendPacket(clientId, new PacketServerCustomPayload("minecraft:brand", Encoding.UTF8.GetBytes("currycomb")));
+            SendPacket(clientId, new PacketChangeDifficulty(Difficulty.Easy, true));
+            SendPacket(clientId, new PacketServerPlayerAbilities(new()));
             SendPacket(clientId, new PacketSetHeldItem(0));
+            SendPacket(clientId, new PacketUpdateRecipes());
+            SendPacket(clientId, new PacketUpdateTags());
+            SendPacket(clientId, new PacketEntityEvent(45, 24));
+            SendPacket(clientId, new PacketCommandList());
+            SendPacket(clientId, new PacketRecipe(RecipePacketState.Init, new()));
+            SendPacket(clientId, new PacketPlayerPosition(0.0, 64.0, 0.0, 0, 0, 0x1f, 0, false));
+            
+            SendPacket(clientId, new PacketPlayerInfo(
+                Action: PlayerInfoAction.AddPlayer, 
+                Actions: new IPlayerInfoAction[] { 
+                    new AddPlayerInfoAction(
+                        UUID: clientId, 
+                        Player: "TestAccount123", 
+                        Properties: Array.Empty<InfoActionProperty>(), 
+                        GameMode: GameMode.Survival, 
+                        Ping: 0) 
+                }));
 
-            SendPacket(clientId, new PacketChunkData(
-                ChunkX: 0,
-                ChunkZ: 0,
-                PrimaryBitMask: Array.Empty<long>(),
-                Heightmaps: new NbtCompound(string.Empty, new[] { new NbtByteArray("MOTION_BLOCKING") }),
-                Biomes: Array.Empty<int>(),
-                Data: Array.Empty<byte>(),
-                BlockEntities: Array.Empty<NbtCompound>()));
+            SendPacket(clientId, new PacketPlayerInfo(
+                Action: PlayerInfoAction.UpdateLatency,
+                Actions: new IPlayerInfoAction[] {
+                    new PingPlayerInfoAction(
+                        UUID: clientId,
+                        Ping: 0)
+                }));
+
+            SendPacket(clientId, new PacketChunkCacheCenter(0, 0));
 
             SendPacket(clientId, new PacketUpdateLight(
                 ChunkX: 0,
@@ -114,14 +135,24 @@ namespace Currycomb.PlayService
                 SkyLight: Array.Empty<byte[]>(),
                 BlockLight: Array.Empty<byte[]>()));
 
-            SendPacket(clientId, new PacketServerPlayerAbilities(new() { IsFlying = false, FlySpeed = 0.5f }, 1.0f));
+            SendPacket(clientId, new PacketWorldChunk(
+                ChunkX: 0,
+                ChunkZ: 0,
+                PrimaryBitMask: Array.Empty<long>(),
+                Heightmaps: new NbtCompound(string.Empty, new[] { new NbtByteArray("MOTION_BLOCKING") }),
+                Biomes: Array.Empty<int>(),
+                Data: Array.Empty<byte>(),
+                BlockEntities: Array.Empty<NbtCompound>()));
+
             // ChunkDataBulk
-            SendPacket(clientId, new PacketUpdateViewPosition(0, 0));
-            SendPacket(clientId, new PacketWindowItems(0, 0, Array.Empty<InventorySlot>(), new InventorySlot { Present = false }));
-            SendPacket(clientId, new PacketTimeUpdate(0, 0));
+
+            SendPacket(clientId, new PacketSetContainer(0, 0, Array.Empty<InventorySlot>(), new InventorySlot { Present = false }));
+            SendPacket(clientId, new PacketSetTime(0, 0));
+
             SendPacket(clientId, new PacketSpawnPosition(new(10, 65, 10), 0.0f));
             SendPacket(clientId, new PacketPlayerPosition(0.0, 64.0, 0.0, 0, 0, 0x1f, 0, false));
-            // SendPacket(clientId, new PacketDisconnect("hello world."));
+
+            //SendPacket(clientId, new PacketDisconnect("Should be in-game"));
         }
 
         private bool SendPacket<T>(Guid clientId, T packet) where T : IGamePacket

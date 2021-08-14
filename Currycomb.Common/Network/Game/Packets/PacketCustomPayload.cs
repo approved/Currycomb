@@ -20,7 +20,7 @@ namespace Currycomb.Common.Network.Game.Packets
             }
 
             writer.Write(Channel);
-            writer.Write(Data.Length);
+            writer.Write7BitEncodedInt(Data.Length);
             writer.Write(Data);
         }
     }

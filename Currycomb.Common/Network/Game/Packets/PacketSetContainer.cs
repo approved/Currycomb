@@ -3,7 +3,7 @@ using Currycomb.Common.Network.Game.Packets.Types;
 
 namespace Currycomb.Common.Network.Game.Packets
 {
-    public record PacketWindowItems(byte WindowId, int StateId, InventorySlot[] SlotData, InventorySlot CarriedItem) : IGamePacket
+    public record PacketSetContainer(byte WindowId, int StateId, InventorySlot[] SlotData, InventorySlot CarriedItem) : IGamePacket
     {
         public void Write(BinaryWriter writer)
         {

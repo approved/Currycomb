@@ -3,7 +3,7 @@ using System.IO;
 
 namespace Currycomb.Common.Network.Game.Packets
 {
-    public record PacketServerPlayerAbilities(Abilities Abilities, float FoVMultiplier) : IGamePacket
+    public record PacketServerPlayerAbilities(Abilities Abilities, float FoVMultiplier = 0.1f) : IGamePacket
     {
         private const byte InvulnerableFlagPos = 1 << 0;
         private const byte IsFlyingFlagPos     = 1 << 1;

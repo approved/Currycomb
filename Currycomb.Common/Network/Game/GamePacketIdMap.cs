@@ -14,39 +14,77 @@ namespace Currycomb.Common.Network.Game
     {
         static readonly Dictionary<GamePacketId, Type> MapIdToType = new()
         {
-            { GamePacketId.LoginStart, typeof(PacketLoginStart) },
-            { GamePacketId.LoginSuccess, typeof(PacketLoginSuccess) },
 
+            #region Handshake
             { GamePacketId.Handshake, typeof(PacketHandshake) },
+            #endregion
 
-            { GamePacketId.Request, typeof(PacketRequest) },
-            { GamePacketId.Response, typeof(PacketResponse) },
-
-            { GamePacketId.Ping, typeof(PacketPing) },
-            { GamePacketId.Pong, typeof(PacketPong) },
-
-            { GamePacketId.EncryptionRequest, typeof(PacketEncryptionRequest) },
+            #region Login - ServerBound
+            { GamePacketId.LoginStart, typeof(PacketLoginStart) },
             { GamePacketId.EncryptionResponse, typeof(PacketEncryptionResponse) },
+            #endregion
 
-            // Play - Client
+            #region Login - ClientBound
+            { GamePacketId.EncryptionRequest, typeof(PacketEncryptionRequest) },
+            { GamePacketId.LoginSuccess, typeof(PacketLoginSuccess) },
+            #endregion
+
+            #region Status - ServerBound
+            { GamePacketId.Request, typeof(PacketRequest) },
+            { GamePacketId.Ping, typeof(PacketPing) },
+            #endregion
+
+            #region Status - ClientBound
+            { GamePacketId.Response, typeof(PacketResponse) },
+            { GamePacketId.Pong, typeof(PacketPong) },
+            #endregion
+
+            #region Play - ServerBound
             { GamePacketId.ClientInformation, typeof(PacketClientInformation) },
-            { GamePacketId.ClientCustomPayload, typeof(PacketClientCustomPayload) },
-            { GamePacketId.ClientPlayerAbilities, typeof(PacketClientPlayerAbilities) },
 
-            // Play - Server
+            { GamePacketId.ClientCustomPayload, typeof(PacketClientCustomPayload) },
+
+            { GamePacketId.ClientPlayerAbilities, typeof(PacketClientPlayerAbilities) },
+            #endregion
+
+            #region Play - ClientBound
             { GamePacketId.ChangeDifficulty, typeof(PacketChangeDifficulty) },
-            { GamePacketId.WindowItems, typeof(PacketWindowItems) },
+
+            { GamePacketId.ContainerSetContent, typeof(PacketSetContainer) },
+
             { GamePacketId.ServerCustomPayload, typeof(PacketServerCustomPayload) },
+
+            { GamePacketId.CommandList, typeof(PacketCommandList) },
+
             { GamePacketId.DisconnectPlay, typeof(PacketDisconnect) },
-            { GamePacketId.ChunkData, typeof(PacketChunkData) },
+            { GamePacketId.EntityEvent, typeof(PacketEntityEvent) },
+
+            { GamePacketId.WorldChunk, typeof(PacketWorldChunk) },
+
             { GamePacketId.UpdateLight, typeof(PacketUpdateLight) },
+
             { GamePacketId.JoinGame, typeof(PacketJoinGame) },
+
             { GamePacketId.ServerPlayerAbilities, typeof(PacketServerPlayerAbilities) },
+
+            { GamePacketId.PlayerInfo, typeof(PacketPlayerInfo) },
+            //{ GamePacketId.PlayerLookAt, typeof(PacketPlayerLookAt) },
             { GamePacketId.PlayerPosition, typeof(PacketPlayerPosition) },
+            { GamePacketId.Recipe,  typeof(PacketRecipe) },
+
             { GamePacketId.SetHeldItem, typeof(PacketSetHeldItem) },
-            { GamePacketId.UpdateViewPosition, typeof(PacketUpdateViewPosition) },
+            { GamePacketId.ChunkCacheCenter, typeof(PacketChunkCacheCenter) },
+
             { GamePacketId.SpawnPosition, typeof(PacketSpawnPosition) },
-            { GamePacketId.TimeUpdate, typeof(PacketTimeUpdate) },
+
+            { GamePacketId.SetTime, typeof(PacketSetTime) },
+
+            //{ GamePacketId.UpdateAdvancements, typeof(PacketUpdateAdvancements) },
+            //{ GamePacketId.UpdateAttributes, typeof(PacketUpdateAttributes) },
+            //{ GamePacketId.UpdateMobEffects, typeof(PacketUpdateMobEffects) },
+            { GamePacketId.UpdateRecipes, typeof(PacketUpdateRecipes) },
+            { GamePacketId.UpdateTags, typeof(PacketUpdateTags) },
+            #endregion
         };
 
         static readonly Dictionary<Type, GamePacketId> MapTypeToId = MapIdToType.ToDictionary(kvp => kvp.Value, kvp => kvp.Key);
