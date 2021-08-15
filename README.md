@@ -4,7 +4,8 @@
 
 Ports:
 
-- 10001:
-  - AuthService
-- 10002:
-  - BroadcastService WebSocket
+- 10000:
+  - Services - should not be publicly exposed
+- 25565:
+  - Minecraft
+
