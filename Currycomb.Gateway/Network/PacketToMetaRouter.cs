@@ -1,15 +1,16 @@
+using System.IO;
 using System.Threading.Tasks;
 using Currycomb.Common.Network;
-using Currycomb.Gateway.ClientData;
 using Currycomb.Common.Network.Meta;
-using System.IO;
+using Currycomb.Gateway.Clients;
+using Currycomb.Gateway.Meta;
 
-namespace Currycomb.Gateway.Network
+namespace Currycomb.Gateway.Routers
 {
     public class PacketToMetaRouter
     {
-        private readonly MetaPacketHandler _mph;
         private readonly MetaPacketRouter<MetaContext> _metaRouter;
+        private readonly MetaPacketHandler _mph;
 
         public PacketToMetaRouter()
         {

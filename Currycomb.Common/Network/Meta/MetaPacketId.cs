@@ -2,7 +2,8 @@ namespace Currycomb.Common.Network.Meta
 {
     public enum MetaPacketId : byte
     {
-        SetState = 0,
-        SetAesKey = 1,
+        Announce = 0,
+        SetState = 1,
+        SetAesKey = 2,
     }
 }

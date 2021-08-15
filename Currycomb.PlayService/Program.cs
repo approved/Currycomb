@@ -11,6 +11,7 @@ using Currycomb.Common.Network.Meta;
 using Microsoft.IO;
 using Currycomb.Common.Configuration;
 using Microsoft.Extensions.Configuration;
+using System.Linq;
 
 namespace Currycomb.PlayService
 {
@@ -24,15 +25,16 @@ namespace Currycomb.PlayService
             while (true)
             {
                 var packet = await outgoing.ReadAsync();
-                await wps.SendAsync(packet, false);
+                await wps.SendAsync(false, packet);
             }
         }
 
-        public static async Task HandleWrappedPacketStreamIncoming(ChannelWriter<IGameEvent> evt, WrappedPacketStream wps)
+        public static async Task HandleWrappedPacketStreamIncoming(
+            GamePacketRouter<Context> gameRouter,
+            MetaPacketRouter<Context> metaRouter,
+            ChannelWriter<IGameEvent> evt,
+            WrappedPacketStream wps)
         {
-            GamePacketRouter<Context> gameRouter = new PlayPacketHandler().Router;
-            MetaPacketRouter<Context> metaRouter = new MetaPacketHandler().Router;
-
             while (true)
             {
                 Log.Information($"Waiting for wrapped packet.");
@@ -107,6 +109,9 @@ namespace Currycomb.PlayService
 
             gameThread.Start();
 
+            GamePacketRouter<Context> gameRouter = new PlayPacketHandler().Router;
+            MetaPacketRouter<Context> metaRouter = new MetaPacketHandler().Router;
+
             while (true)
             {
                 CancellationTokenSource sessionCts = new();
@@ -119,11 +124,22 @@ namespace Currycomb.PlayService
 
                     WrappedPacketStream wps = new(client.GetStream(), MsManager);
 
+                    // Needs to run for us to receive ack packets
+                    Task wpsLoop = wps.RunAsync(cts.Token);
+
+                    Log.Information("Sending Announce and waiting for ack.");
+                    await wps.Announce(new(
+                        "PlayService",
+                        PlayService.Constants.ServiceId,
+                        metaRouter.Packets.ToArray(),
+                        gameRouter.Packets.ToArray()));
+
+                    Log.Information("Received ack, continuing.");
+
                     await await Task.WhenAny(
-                        wps.RunAsync(sessionCts.Token),
+                        wpsLoop,
                         HandleWrappedPacketStreamOutgoing(outgoing.Reader, wps),
-                        HandleWrappedPacketStreamIncoming(game.EventWriter, wps)
-                    );
+                        HandleWrappedPacketStreamIncoming(gameRouter, metaRouter, game.EventWriter, wps));
                 }
                 // No connection could be made because the target machine actively refused it.
                 catch (SocketException e) when (e.ErrorCode == 10061) { }

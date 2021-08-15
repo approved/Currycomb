@@ -2,8 +2,9 @@
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using Currycomb.Common.Extensions;
 
-namespace Currycomb.Gateway
+namespace Currycomb.Gateway.Clients
 {
     public class ClientListener
     {
@@ -18,26 +19,12 @@ namespace Currycomb.Gateway
 
         public async Task AcceptConnections(CancellationToken ct = default)
         {
-            // TODO: Move this to an extension on TcpListener
-            ct.Register(() =>
-            {
-                try
-                {
-                    using TcpClient client = new TcpClient();
-                    client.Connect(IPAddress.Loopback, _endPoint.Port);
-                }
-                catch
-                {
-                    // this is expected to fail
-                }
-            });
-
             TcpListener listener = new TcpListener(_endPoint);
             listener.Start();
 
             while (!ct.IsCancellationRequested)
             {
-                TcpClient client = await listener.AcceptTcpClientAsync();
+                TcpClient client = await listener.AcceptTcpClientAsync(ct);
                 if (ct.IsCancellationRequested)
                     return;
 

@@ -1,9 +1,9 @@
 using System.Threading.Tasks;
 using Currycomb.Common.Network;
-using Currycomb.Gateway.ClientData;
+using Currycomb.Gateway.Clients;
 using Serilog;
 
-namespace Currycomb.Gateway.Network
+namespace Currycomb.Gateway.Routers
 {
     public class PacketToClientRouter
     {

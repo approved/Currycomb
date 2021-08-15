@@ -14,6 +14,7 @@ namespace Currycomb.Common.Network.Meta
     {
         static readonly Dictionary<MetaPacketId, Type> MapIdToType = new()
         {
+            { MetaPacketId.Announce, typeof(PacketAnnounce) },
             { MetaPacketId.SetState, typeof(PacketSetState) },
             { MetaPacketId.SetAesKey, typeof(PacketSetAesKey) },
         };

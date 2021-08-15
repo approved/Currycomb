@@ -1,10 +1,12 @@
 ﻿using System.Net;
 using System.Threading.Tasks;
-using Currycomb.Gateway.Network.Services;
 using Currycomb.Common.Network;
 using System.Threading.Channels;
 using System.Threading;
 using Serilog;
+using Currycomb.Common.Network.Game;
+using Currycomb.Gateway.Clients;
+using Currycomb.Gateway.Routers;
 
 namespace Currycomb.Gateway
 {
@@ -18,31 +20,18 @@ namespace Currycomb.Gateway
             CancellationToken ct = cts.Token;
 
             // TODO: Move to configuration file
-            IPEndPoint authEndpoint = new(IPAddress.Any, 10001);
-            IPEndPoint playEndpoint = new(IPAddress.Any, 10003);
+            IPEndPoint wpktEndpoint = new(IPAddress.Any, 10000);
             IPEndPoint gameEndpoint = new(IPAddress.Any, 25565);
 
             log.Information("Starting GatewayServer.");
             log.Information("Ports: ");
-            log.Information("  Auth: {authPort}", authEndpoint.Port);
-            log.Information("  Play: {playPort}", playEndpoint.Port);
+            log.Information("  Wpkt: {wpktPort}", wpktEndpoint.Port);
             log.Information("  Game: {gamePort}", gameEndpoint.Port);
 
-            AuthServiceManager authService = new();
-            PlayServiceManager playService = new();
-
-            ServiceListener<AuthServiceManager, AuthService> authListener = new(
-                authService,
-                authEndpoint,
-                x => new(new(x.GetStream())));
-
-            ServiceListener<PlayServiceManager, PlayService> playListener = new(
-                playService,
-                playEndpoint,
-                x => new(new(x.GetStream())));
-
-            ServiceCollection services = new(authService, playService);
+            ServiceCollection services = new();
             ClientCollection clients = new();
+
+            ServiceListener serviceListener = new(wpktEndpoint, services);
 
             ClientListener clientListener = new(
                 clients,
@@ -50,27 +39,25 @@ namespace Currycomb.Gateway
 
             PacketRouter router = new(
                 clients,
-                new(authService, playService),
+                new(services),
                 new(),
                 new());
 
             Channel<WrappedPacketContainer> servicePackets = Channel.CreateUnbounded<WrappedPacketContainer>();
-            Channel<(bool Authed, WrappedPacket)> clientPackets = Channel.CreateUnbounded<(bool, WrappedPacket)>();
+            Channel<(State, WrappedPacket)> clientPackets = Channel.CreateUnbounded<(State, WrappedPacket)>();
 
             Task routeServicePackets = Task.Run(async () =>
             {
                 while (!ct.IsCancellationRequested)
-                {
                     await router.RoutePacketFromService(await servicePackets.Reader.ReadAsync(ct), ct);
-                }
             });
 
             Task routeClientPackets = Task.Run(async () =>
             {
                 while (!ct.IsCancellationRequested)
                 {
-                    var (authenticated, packet) = await clientPackets.Reader.ReadAsync(ct);
-                    await router.RoutePacketFromClient(authenticated, packet, ct);
+                    var (state, packet) = await clientPackets.Reader.ReadAsync(ct);
+                    await router.RoutePacketFromClient(state, packet, ct);
                 }
             });
 
@@ -80,14 +67,11 @@ namespace Currycomb.Gateway
                 routeServicePackets,
                 routeClientPackets,
 
-                clients.ReadPacketsToChannel(clientPackets.Writer, ct),
                 services.ReadPacketsToChannel(servicePackets.Writer, ct),
+                clients.ReadPacketsToChannel(clientPackets.Writer, ct),
 
-                authListener.AcceptConnections(ct),
-                playListener.AcceptConnections(ct),
-
-                clientListener.AcceptConnections(ct)
-            );
+                serviceListener.AcceptConnections(ct),
+                clientListener.AcceptConnections(ct));
 
             log.Information("GatewayServer is shutting down");
         }

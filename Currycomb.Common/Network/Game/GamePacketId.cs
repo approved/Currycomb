@@ -198,7 +198,7 @@ namespace Currycomb.Common.Network.Game
 #pragma warning restore format // @formatter:on
     }
 
-    public static class PacketIdExt
+    public static class GamePacketIdExt
     {
         public static GamePacketId FromRaw(BoundTo bound, State state, uint id) => (GamePacketId)((uint)bound | (uint)state | id);
         public static uint ToRaw(this GamePacketId id) => (uint)id & 0b00011111111111111111111111111111;

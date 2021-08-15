@@ -1,5 +1,4 @@
 ﻿using Currycomb.Common.Network;
-using Currycomb.Common.Network.Broadcast;
 using Currycomb.Common.Network.Game;
 using Currycomb.Common.Network.Meta;
 using System;
@@ -21,6 +20,6 @@ namespace Currycomb.PlayService
             => (Event, ClientId, _wps) = (evt, clientId, wps);
 
         public async Task SendPacket<T>(T packet) where T : IGamePacket
-            => await _wps.SendAsync(new WrappedPacket(ClientId, packet.ToBytes()), false);
+            => await _wps.SendAsync(false, new WrappedPacket(ClientId, packet.ToBytes()));
     }
 }

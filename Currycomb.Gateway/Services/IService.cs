@@ -2,12 +2,19 @@ using System.Threading.Tasks;
 using Currycomb.Common.Network;
 using System.Threading;
 using System.Threading.Channels;
+using Currycomb.Common.Network.Game;
+using Currycomb.Common.Network.Meta;
 
 namespace Currycomb.Gateway
 {
     public interface IService
     {
-        ValueTask HandleAsync(bool isMeta, WrappedPacket packet) => ValueTask.CompletedTask;
+        string Name { get; }
+
+        bool Supports(GamePacketId id) => false;
+        bool Supports(MetaPacketId id) => false;
+
+        ValueTask SendAsync(bool isMeta, WrappedPacket packet) => ValueTask.CompletedTask;
 
         Task RunAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
 

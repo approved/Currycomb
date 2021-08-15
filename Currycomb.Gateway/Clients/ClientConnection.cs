@@ -10,7 +10,7 @@ using Currycomb.Common.Network;
 using Currycomb.Common.Network.Game;
 using Serilog;
 
-namespace Currycomb.Gateway.ClientData
+namespace Currycomb.Gateway.Clients
 {
     public class ClientConnection : IDisposable
     {
@@ -28,8 +28,6 @@ namespace Currycomb.Gateway.ClientData
         private static readonly byte[] AesIsSeeminglyBroken = new byte[15];
         private Aes? _aes;
 
-        private bool _isInPlayState = false;
-
         public ClientConnection(NetworkStream stream) => _inUseStreamRead = _inUseStreamWrite = _netStream = stream;
 
         // Assign a temporary Guid until we have a "real" one.
@@ -39,7 +37,7 @@ namespace Currycomb.Gateway.ClientData
         public void Dispose() => _netStream.Dispose();
 
         // TODO(minor): Might want to re-evaluate this.
-        public async Task ReadPacketsToChannelAsync(ChannelWriter<(bool Authed, WrappedPacket)> writer, CancellationToken ct = default)
+        public async Task ReadPacketsToChannelAsync(ChannelWriter<(State, WrappedPacket)> writer, CancellationToken ct = default)
         {
             byte[] bytes = new byte[MaximumPacketSize];
             using MemoryStream memory = new(bytes);
@@ -59,7 +57,7 @@ namespace Currycomb.Gateway.ClientData
 
                 for (int i = 0; i < length; i += await _inUseStreamRead.ReadAsync(bytes, i, length - i)) ;
 
-                await writer.WriteAsync((_isInPlayState, new WrappedPacket(Id, memory.ToArray())));
+                await writer.WriteAsync((State, new WrappedPacket(Id, memory.ToArray())));
             }
         }
 
@@ -113,7 +111,6 @@ namespace Currycomb.Gateway.ClientData
             Log.Debug("Setting State for ClientConnection {@id}.", Id);
 
             State = state;
-            _isInPlayState = state == State.Play;
         }
 
         private void RefreshInUseStream()

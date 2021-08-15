@@ -1,36 +1,52 @@
-﻿using System.Threading.Tasks;
+﻿using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
+using Currycomb.Common.Extensions;
 using Currycomb.Common.Network;
+using Currycomb.Common.Network.Game;
+using Currycomb.Common.Network.Meta;
+using Serilog;
 
-namespace Currycomb.Gateway.Network
+namespace Currycomb.Gateway.Routers
 {
     public class PacketToServiceRouter
     {
-        private readonly AuthServiceManager _auth;
-        private readonly PlayServiceManager _play;
+        private readonly ServiceCollection _services;
 
-        public readonly IService[] Services;
+        public PacketToServiceRouter(ServiceCollection services)
+            => _services = services;
 
-        public PacketToServiceRouter(AuthServiceManager auth, PlayServiceManager play)
+        public async ValueTask HandleGameAsync(BoundTo boundTo, State state, WrappedPacket packet)
         {
-            _auth = auth;
-            _play = play;
+            // GetOrCreatePacketByteArray should always return an existing array since all packets reaching this point are from an external source.
+            byte[] data = packet.GetOrCreatePacketByteArray();
 
-            Services = new IService[] { auth, play };
+            GamePacketHeader header = GamePacketHeader.Read(new(new MemoryStream(data)), (uint)data.Length);
+            GamePacketId packetId = GamePacketIdExt.FromRaw(boundTo, state, header.PacketId);
+
+            Log.Information("Reading game packet: {pktId}, {header}", packetId, header);
+
+            var services = _services.Services
+                .Where(x => x.Supports(packetId))
+                .Inspect(x => Log.Information("Using handler: {name}", x.Name))
+                .Select(x => x.SendAsync(false, packet));
+
+            foreach (var task in services)
+                await task;
         }
 
-        // TODO: In the future at some point we'll probably want services to themselves subscribe to game and meta packets.
-        // That'll also allow us to not treat different services differently, but rather just have multiple `Service` instances with self-reported capabilities.
-
-        // Meta packets go to all services that support them
-        public Task HandleMetaAsync(WrappedPacket packet) => Task.WhenAll(
-            _play.HandleAsync(requireDelivery: false, isMeta: true, packet).AsTask(),
-            _auth.HandleAsync(requireDelivery: false, isMeta: true, packet).AsTask()
-        );
-
-        public ValueTask HandleGameAsync(bool authenticated, WrappedPacket packet) => authenticated switch
+        public async ValueTask HandleMetaAsync(WrappedPacket packet)
         {
-            true => _play.HandleAsync(requireDelivery: true, isMeta: false, packet),
-            false => _auth.HandleAsync(requireDelivery: true, isMeta: false, packet),
-        };
+            // GetOrCreatePacketByteArray should always return an existing array since all packets reaching this point are from an external source.
+            MetaPacketHeader header = MetaPacketHeader.Read(new(new MemoryStream(packet.GetOrCreatePacketByteArray())));
+            MetaPacketId packetId = header.PacketId;
+
+            var services = _services.Services
+                .Where(s => s.Supports(packetId))
+                .Select(x => x.SendAsync(true, packet));
+
+            foreach (var task in services)
+                await task;
+        }
     }
 }

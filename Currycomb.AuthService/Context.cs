@@ -38,9 +38,9 @@ namespace Currycomb.AuthService
             => SendMetaPacket<T>(new MetaPacket<T>(new(MetaPacketIdMap<T>.Id), packet));
 
         public async Task SendMetaPacket<T>(MetaPacket<T> packet) where T : IMetaPacket
-            => await _wps.SendWaitAsync(new WrappedPacket(ClientId, packet.ToBytes()), true);
+            => await _wps.SendWaitAsync(true, new WrappedPacket(ClientId, packet.ToBytes()));
 
         public async Task SendPacket<T>(T packet) where T : IGamePacket
-            => await _wps.SendAsync(new WrappedPacket(ClientId, packet.ToBytes()), false);
+            => await _wps.SendAsync(false, new WrappedPacket(ClientId, packet.ToBytes()));
     }
 }

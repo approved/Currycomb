@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.IO;
+using System.Linq;
 using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Threading;
@@ -20,14 +21,15 @@ namespace Currycomb.AuthService
         private static readonly string LogFileName = $"logs/auth_service/auth_{DateTime.Now:yyyy-MM-dd-HH-mm-ss}_{Environment.ProcessId}.txt";
         private static readonly RecyclableMemoryStreamManager MsManager = new RecyclableMemoryStreamManager();
 
-        public static async Task HandleWrappedPacketStream(WrappedPacketStream wps, CancellationToken ct = default)
+        public static async Task HandleWrappedPacketStream(
+            GamePacketRouter<Context> gameRouter,
+            MetaPacketRouter<Context> metaRouter,
+            WrappedPacketStream wps,
+            CancellationToken ct = default)
         {
             ConcurrentDictionary<Guid, State> ClientState = new();
 
             RSA rsa = RSA.Create(1024);
-
-            GamePacketRouter<Context> gameRouter = new AuthPacketHandler().Router;
-            MetaPacketRouter<Context> metaRouter = new MetaPacketHandler().Router;
 
             while (!ct.IsCancellationRequested)
             {
@@ -91,6 +93,9 @@ namespace Currycomb.AuthService
                 return;
             }
 
+            GamePacketRouter<Context> gameRouter = new AuthPacketHandler().Router;
+            MetaPacketRouter<Context> metaRouter = new MetaPacketHandler().Router;
+
             while (true)
             {
                 CancellationTokenSource cts = new();
@@ -103,10 +108,19 @@ namespace Currycomb.AuthService
 
                     WrappedPacketStream wps = new(client.GetStream(), MsManager);
 
-                    await await Task.WhenAny(
-                        wps.RunAsync(cts.Token),
-                        HandleWrappedPacketStream(wps, cts.Token)
-                    );
+                    // Needs to run for us to receive ack packets
+                    Task wpsLoop = wps.RunAsync(cts.Token);
+
+                    Log.Information("Sending Announce and waiting for ack.");
+                    await wps.Announce(new(
+                        "AuthService",
+                        AuthService.Constants.ServiceId,
+                        metaRouter.Packets.ToArray(),
+                        gameRouter.Packets.ToArray()));
+
+                    Log.Information("Received ack, continuing.");
+
+                    await await Task.WhenAny(wpsLoop, HandleWrappedPacketStream(gameRouter, metaRouter, wps, cts.Token));
                 }
                 // No connection could be made because the target machine actively refused it.
                 catch (SocketException e) when (e.ErrorCode == 10061) { }

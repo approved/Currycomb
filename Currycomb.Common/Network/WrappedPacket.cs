@@ -5,6 +5,7 @@ using Currycomb.Common.Extensions;
 
 namespace Currycomb.Common.Network
 {
+    // Wrapped game packets do NOT include their length in the Data.
     public record WrappedPacket(Guid ClientId, ReadOnlyMemory<byte> Data)
     {
         private byte[]? _bytes;

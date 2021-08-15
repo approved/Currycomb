@@ -46,8 +46,8 @@ namespace Currycomb.Common.Network.Game
 
             { GamePacketId.ClientKeepAlive, typeof(PacketClientKeepAlive) },
 
-            { GamePacketId.ClientMovePlayerPos, typeof(PacketClientMovePlayerPos) },
-            { GamePacketId.ClientMovePlayer, typeof(PacketClientMovePlayer) },
+            // { GamePacketId.ClientMovePlayerPos, typeof(PacketClientMovePlayerPos) },
+            // { GamePacketId.ClientMovePlayer, typeof(PacketClientMovePlayer) },
 
             { GamePacketId.ClientPlayerAbilities, typeof(PacketClientPlayerAbilities) },
             #endregion
@@ -76,7 +76,7 @@ namespace Currycomb.Common.Network.Game
             { GamePacketId.PlayerInfo, typeof(PacketPlayerInfo) },
             //{ GamePacketId.PlayerLookAt, typeof(PacketPlayerLookAt) },
             { GamePacketId.PlayerPosition, typeof(PacketPlayerPosition) },
-            { GamePacketId.Recipe,  typeof(PacketRecipe) },
+            { GamePacketId.Recipe, typeof(PacketRecipe) },
 
             { GamePacketId.SetHeldItem, typeof(PacketSetHeldItem) },
             { GamePacketId.ChunkCacheCenter, typeof(PacketChunkCacheCenter) },

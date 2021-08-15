@@ -1,21 +1,18 @@
-using System.Threading.Tasks;
-using Serilog;
-using Currycomb.Gateway.Network;
-using Currycomb.Common.Network;
 using System.Threading;
-using Currycomb.Gateway.ClientData;
+using System.Threading.Tasks;
+using Currycomb.Common.Network;
+using Currycomb.Common.Network.Game;
+using Currycomb.Gateway.Clients;
+using Serilog;
 
-namespace Currycomb.Gateway
+namespace Currycomb.Gateway.Routers
 {
     public class PacketRouter
     {
         private readonly ClientCollection _clients;
-
-        private readonly PacketToServiceRouter _toService;
         private readonly PacketToClientRouter _toClient;
         private readonly PacketToMetaRouter _toMeta;
-
-        private readonly IService[] _services;
+        private readonly PacketToServiceRouter _toService;
 
         public PacketRouter(ClientCollection clients, PacketToServiceRouter toService, PacketToClientRouter toClient, PacketToMetaRouter toMeta)
         {
@@ -24,9 +21,10 @@ namespace Currycomb.Gateway
             _toService = toService;
             _toClient = toClient;
             _toMeta = toMeta;
-
-            _services = toService.Services;
         }
+
+        public ValueTask RoutePacketFromClient(State state, WrappedPacket packet, CancellationToken ct = default)
+            => _toService.HandleGameAsync(BoundTo.Server, state, packet);
 
         public async Task RoutePacketFromService(WrappedPacketContainer wpc, CancellationToken ct = default)
         {
@@ -57,8 +55,5 @@ namespace Currycomb.Gateway
                 await _toClient.HandlePacketAsync(client, packet);
             }
         }
-
-        public ValueTask RoutePacketFromClient(bool authenticated, WrappedPacket packet, CancellationToken ct = default)
-            => _toService.HandleGameAsync(authenticated, packet);
     }
 }

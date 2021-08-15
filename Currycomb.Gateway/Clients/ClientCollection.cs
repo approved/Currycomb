@@ -1,16 +1,14 @@
 using System;
 using Serilog;
 using System.Collections.Concurrent;
-using Currycomb.Gateway.ClientData;
 using Currycomb.Common.Network.Game;
 using System.Threading.Channels;
 using Currycomb.Common.Network;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
-using System.ComponentModel;
 
-namespace Currycomb.Gateway
+namespace Currycomb.Gateway.Clients
 {
     public class ClientCollection
     {
@@ -60,7 +58,7 @@ namespace Currycomb.Gateway
 
         private Channel<ClientConnection> _newClient = Channel.CreateUnbounded<ClientConnection>();
 
-        public async Task ReadPacketsToChannel(ChannelWriter<(bool Authed, WrappedPacket)> writer, CancellationToken ct = default)
+        public async Task ReadPacketsToChannel(ChannelWriter<(State, WrappedPacket)> writer, CancellationToken ct = default)
         {
             List<Task<Guid>> tasks = new() { new TaskCompletionSource<Guid>().Task };
             Task<Task<Guid>>? handleOldClients;

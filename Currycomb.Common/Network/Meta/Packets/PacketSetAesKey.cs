@@ -1,5 +1,4 @@
 using System.IO;
-using Serilog;
 
 namespace Currycomb.Common.Network.Meta.Packets
 {
