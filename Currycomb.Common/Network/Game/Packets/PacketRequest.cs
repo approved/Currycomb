@@ -1,10 +1,11 @@
 using System.IO;
-using System.Threading.Tasks;
 
 namespace Currycomb.Common.Network.Game.Packets
 {
-    public record PacketRequest() : IGamePacket
+    [GamePacket(GamePacketId.Request)]
+    public readonly struct PacketRequest : IGamePacket
     {
-        public static Task<PacketRequest> ReadAsync(Stream stream) => Task.FromResult<PacketRequest>(new());
+        public PacketRequest(BinaryReader reader) { }
+        public void Write(BinaryWriter writer) { }
     }
 }

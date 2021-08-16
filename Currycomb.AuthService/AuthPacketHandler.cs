@@ -3,6 +3,7 @@ using System.Security.Cryptography;
 using System.Threading.Tasks;
 using Currycomb.Common.Network.Game;
 using Currycomb.Common.Network.Game.Packets;
+using Currycomb.Common.Network.Game.Packets.Types;
 using Currycomb.Common.Network.Meta;
 using Currycomb.Common.Network.Meta.Packets;
 using Serilog;
@@ -60,7 +61,7 @@ namespace Currycomb.AuthService
             if (!new Span<byte>(c.VerifyToken).SequenceEqual(verify))
             {
                 Log.Error("VerifyToken mismatch");
-                await c.SendPacket(new PacketDisconnectLogin("VerifyToken mismatch"));
+                await c.SendPacket(new PacketDisconnectLogin(new Chat("VerifyToken mismatch")));
                 // TODO: Force kick the client, something went wrong.
             }
 

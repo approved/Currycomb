@@ -2,8 +2,24 @@
 
 namespace Currycomb.Common.Network.Game.Packets
 {
-    public record PacketEntityEvent(int EntityId, byte Status) : IGamePacket
+    [GamePacket(GamePacketId.EntityEvent)]
+    public readonly struct PacketEntityEvent : IGamePacket
     {
+        public readonly int EntityId;
+        public readonly byte Status;
+
+        public PacketEntityEvent(int entityId, byte status)
+        {
+            EntityId = entityId;
+            Status = status;
+        }
+
+        public PacketEntityEvent(BinaryReader reader)
+        {
+            EntityId = reader.ReadInt32();
+            Status = reader.ReadByte();
+        }
+
         public void Write(BinaryWriter writer)
         {
             writer.Write(EntityId);

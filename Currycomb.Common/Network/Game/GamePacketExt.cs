@@ -7,7 +7,7 @@ namespace Currycomb.Common.Network.Game
     public static class GamePacketExt
     {
         public static Memory<byte> ToBytes<T>(this T packet, MemoryStream? ms = null) where T : IGamePacket
-            => ToBytes(packet, GamePacketIdMap<T>.Id);
+            => ToBytes(packet, GamePackets<T>.Id);
 
         public static Memory<byte> ToBytes<T>(this T packet, GamePacketId id, MemoryStream? msIn = null) where T : IGamePacket
         {

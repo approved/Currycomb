@@ -52,7 +52,7 @@ namespace Currycomb.Common.Network.Game
             GamePacketId id = GamePacketIdExt.FromRaw(BoundTo.Server, context.State, header.PacketId);
             Log.Information("Read packet id: {@id}", id);
 
-            IGamePacket packet = await GamePacketReader.ReadAsync(id, stream);
+            IGamePacket packet = GamePackets.Read(id, new(stream));
             Log.Information("Read packet: {@packet}", packet);
 
             await HandlePacketAsync(context, id, packet);
@@ -90,13 +90,13 @@ namespace Currycomb.Common.Network.Game
 
             public Builder On<T>(Func<TContext, T, Task> handler) where T : IGamePacket
             {
-                Handlers.Add(GamePacketIdMap<T>.Id, (x, y) => handler(x, (T)y));
+                Handlers.Add(GamePackets<T>.Id, (x, y) => handler(x, (T)y));
                 return this;
             }
 
             public Builder On<T>(Action<TContext, T> handler) where T : IGamePacket
             {
-                Handlers.Add(GamePacketIdMap<T>.Id, (x, y) =>
+                Handlers.Add(GamePackets<T>.Id, (x, y) =>
                 {
                     handler(x, (T)y);
                     return Task.CompletedTask;

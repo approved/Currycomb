@@ -1,14 +1,16 @@
 using System;
 using System.IO;
-using System.Threading.Tasks;
-using Currycomb.Common.Extensions;
 
 namespace Currycomb.Common.Network.Game.Packets
 {
-    public record PacketLoginStart(String Username) : IGamePacket
+    [GamePacket(GamePacketId.LoginStart)]
+    public readonly struct PacketLoginStart : IGamePacket
     {
-        public static async Task<PacketLoginStart> ReadAsync(Stream stream) => new(
-            await stream.ReadStringAsync()
-        );
+        public readonly String Username;
+
+        public PacketLoginStart(BinaryReader reader)
+        {
+            Username = reader.ReadString();
+        }
     }
 }

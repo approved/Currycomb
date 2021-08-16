@@ -75,19 +75,19 @@ namespace Currycomb.PlayService
             Log.Information("GameInstance.OnPlayerConnected: {@clientId}", clientId);
 
             SendPacket(clientId, new PacketJoinGame(
-                EntityID: 0,
-                IsHardcore: false,
-                GameMode: GameMode.Creative,
-                PreviousGameMode: GameMode.None,
-                WorldNames: new[] { "minecraft:overworld" },
-                SpawnWorldIdentifier: "minecraft:overworld",
-                WorldSeed: 1234567890123456,
-                MaxPlayers: 100,
-                RenderDistance: 10,
-                ReducedDebugInfo: false,
-                EnableRespawnScreen: true,
-                IsDebug: false,
-                IsFlat: false));
+                entityID: 0,
+                isHardcore: false,
+                gameMode: GameMode.Creative,
+                previousGameMode: GameMode.None,
+                worldNames: new[] { "minecraft:overworld" },
+                spawnWorldIdentifier: "minecraft:overworld",
+                worldSeed: 1234567890123456,
+                maxPlayers: 100,
+                renderDistance: 10,
+                reducedDebugInfo: false,
+                enableRespawnScreen: true,
+                isDebug: false,
+                isFlat: false));
 
             SendPacket(clientId, new PacketServerCustomPayload("minecraft:brand", Encoding.UTF8.GetBytes("currycomb")));
             SendPacket(clientId, new PacketChangeDifficulty(Difficulty.Easy, true));
@@ -101,8 +101,8 @@ namespace Currycomb.PlayService
             SendPacket(clientId, new PacketPlayerPosition(0.0, 64.0, 0.0, 0, 0, 0x1f, 0, false));
 
             SendPacket(clientId, new PacketPlayerInfo(
-                Action: PlayerInfoAction.AddPlayer,
-                Actions: new IPlayerInfoAction[] {
+                action: PlayerInfoAction.AddPlayer,
+                actions: new IPlayerInfoAction[] {
                     new AddPlayerInfoAction(
                         UUID: clientId,
                         Player: "Fiskpinne",
@@ -112,8 +112,8 @@ namespace Currycomb.PlayService
                 }));
 
             SendPacket(clientId, new PacketPlayerInfo(
-                Action: PlayerInfoAction.UpdateLatency,
-                Actions: new IPlayerInfoAction[] {
+                action: PlayerInfoAction.UpdateLatency,
+                actions: new IPlayerInfoAction[] {
                     new PingPlayerInfoAction(
                         UUID: clientId,
                         Ping: 0)

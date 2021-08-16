@@ -1,17 +1,38 @@
 using System;
 using System.IO;
-using System.Threading.Tasks;
-using Currycomb.Common.Extensions;
 
 namespace Currycomb.Common.Network.Game.Packets
 {
-    public record PacketHandshake(uint ProtocolVersion, String ServerAddress, ushort Port, State State) : IGamePacket
+    [GamePacket(GamePacketId.Handshake)]
+    public readonly struct PacketHandshake : IGamePacket
     {
-        public static async Task<PacketHandshake> ReadAsync(Stream stream) => new(
-            await stream.Read7BitEncodedUIntAsync(),
-            await stream.ReadStringAsync(),
-            await stream.ReadUShortAsync(),
-            StateExt.FromRaw(await stream.Read7BitEncodedUIntAsync())
-        );
+        public readonly uint ProtocolVersion;
+        public readonly String ServerAddress;
+        public readonly ushort Port;
+        public readonly State State;
+
+        public PacketHandshake(BinaryReader stream)
+        {
+            ProtocolVersion = (uint)stream.Read7BitEncodedInt();
+            ServerAddress = stream.ReadString();
+            Port = stream.ReadUInt16();
+            State = StateExt.FromRaw((uint)stream.Read7BitEncodedInt());
+        }
+
+        public PacketHandshake(uint protocolVersion, String serverAddress, ushort port, State state)
+        {
+            ProtocolVersion = protocolVersion;
+            ServerAddress = serverAddress;
+            Port = port;
+            State = state;
+        }
+
+        public void Write(BinaryWriter stream)
+        {
+            stream.Write7BitEncodedInt((int)ProtocolVersion);
+            stream.Write(ServerAddress);
+            stream.Write(Port);
+            stream.Write7BitEncodedInt((int)State.ToRaw());
+        }
     }
 }

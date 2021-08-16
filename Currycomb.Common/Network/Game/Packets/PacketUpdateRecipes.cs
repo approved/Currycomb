@@ -1,9 +1,16 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 
 namespace Currycomb.Common.Network.Game.Packets
 {
-    public class PacketUpdateRecipes : IGamePacket
+    // TODO: Implement.
+
+    [GamePacket(GamePacketId.UpdateRecipes)]
+    public readonly struct PacketUpdateRecipes : IGamePacket
     {
+        public PacketUpdateRecipes(BinaryReader reader)
+            => throw new NotImplementedException();
+
         public void Write(BinaryWriter writer)
         {
             writer.Write7BitEncodedInt(0);

@@ -1,11 +1,16 @@
 ﻿using Currycomb.Common.Game.Tags;
+using System;
 using System.IO;
 using System.Runtime.CompilerServices;
 
 namespace Currycomb.Common.Network.Game.Packets
 {
-    public class PacketUpdateTags : IGamePacket
+    [GamePacket(GamePacketId.UpdateTags)]
+    public readonly struct PacketUpdateTags : IGamePacket
     {
+        public PacketUpdateTags(BinaryReader reader)
+            => throw new NotImplementedException();
+
         public void Write(BinaryWriter writer)
         {
             writer.Write7BitEncodedInt(5);

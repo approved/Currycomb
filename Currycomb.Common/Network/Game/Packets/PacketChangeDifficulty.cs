@@ -1,10 +1,26 @@
-﻿using Currycomb.Common.Game;
-using System.IO;
+﻿using System.IO;
+using Currycomb.Common.Game;
 
 namespace Currycomb.Common.Network.Game.Packets
 {
-    public record PacketChangeDifficulty(Difficulty Difficulty, bool IsLocked) : IGamePacket
+    [GamePacket(GamePacketId.ChangeDifficulty)]
+    public readonly struct PacketChangeDifficulty : IGamePacket
     {
+        public readonly Difficulty Difficulty;
+        public readonly bool IsLocked;
+
+        public PacketChangeDifficulty(BinaryReader reader)
+        {
+            Difficulty = (Difficulty)reader.ReadByte();
+            IsLocked = reader.ReadBoolean();
+        }
+
+        public PacketChangeDifficulty(Difficulty difficulty, bool isLocked)
+        {
+            Difficulty = difficulty;
+            IsLocked = isLocked;
+        }
+
         public void Write(BinaryWriter writer)
         {
             writer.Write(Difficulty.AsByte());

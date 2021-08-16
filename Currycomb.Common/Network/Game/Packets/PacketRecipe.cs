@@ -1,10 +1,24 @@
 ﻿using Currycomb.Common.Network.Game.Packets.Types;
+using System;
 using System.IO;
 
 namespace Currycomb.Common.Network.Game.Packets
 {
-    public record PacketRecipe(RecipePacketState State, RecipeBooks RecipeBooks) : IGamePacket
+    [GamePacket(GamePacketId.Recipe)]
+    public readonly struct PacketRecipe : IGamePacket
     {
+        public readonly RecipePacketState State;
+        public readonly RecipeBooks RecipeBooks;
+
+        public PacketRecipe(RecipePacketState state, RecipeBooks recipeBooks)
+        {
+            State = state;
+            RecipeBooks = recipeBooks;
+        }
+
+        public PacketRecipe(BinaryReader reader)
+            => throw new NotImplementedException();
+
         public void Write(BinaryWriter writer)
         {
             writer.Write7BitEncodedInt((int)State);

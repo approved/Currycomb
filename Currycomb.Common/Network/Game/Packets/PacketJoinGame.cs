@@ -1,27 +1,61 @@
 ﻿using Currycomb.Common.Game;
-using Currycomb.Nbt;
 using System;
 using System.IO;
 
 namespace Currycomb.Common.Network.Game.Packets
 {
-    public record PacketJoinGame(
-        int EntityID,
-        bool IsHardcore,
-        GameMode GameMode,
-        GameMode PreviousGameMode,
-        string[] WorldNames,
-        // DimensionCodec,
-        // Dimension
-        string SpawnWorldIdentifier,
-        long WorldSeed,
-        int MaxPlayers,
-        int RenderDistance,
-        bool ReducedDebugInfo,
-        bool EnableRespawnScreen,
-        bool IsDebug,
-        bool IsFlat) : IGamePacket
+    [GamePacket(GamePacketId.JoinGame)]
+    public readonly struct PacketJoinGame : IGamePacket
     {
+        public readonly int EntityID;
+        public readonly bool IsHardcore;
+        public readonly GameMode GameMode;
+        public readonly GameMode PreviousGameMode;
+        public readonly string[] WorldNames;
+        // DimensionCodec
+        // Dimension
+        public readonly string SpawnWorldIdentifier;
+        public readonly long WorldSeed;
+        public readonly int MaxPlayers;
+        public readonly int RenderDistance;
+        public readonly bool ReducedDebugInfo;
+        public readonly bool EnableRespawnScreen;
+        public readonly bool IsDebug;
+        public readonly bool IsFlat;
+
+        public PacketJoinGame(
+            int entityID,
+            bool isHardcore,
+            GameMode gameMode,
+            GameMode previousGameMode,
+            string[] worldNames,
+            string spawnWorldIdentifier,
+            long worldSeed,
+            int maxPlayers,
+            int renderDistance,
+            bool reducedDebugInfo,
+            bool enableRespawnScreen,
+            bool isDebug,
+            bool isFlat)
+        {
+            EntityID = entityID;
+            IsHardcore = isHardcore;
+            GameMode = gameMode;
+            PreviousGameMode = previousGameMode;
+            WorldNames = worldNames;
+            SpawnWorldIdentifier = spawnWorldIdentifier;
+            WorldSeed = worldSeed;
+            MaxPlayers = maxPlayers;
+            RenderDistance = renderDistance;
+            ReducedDebugInfo = reducedDebugInfo;
+            EnableRespawnScreen = enableRespawnScreen;
+            IsDebug = isDebug;
+            IsFlat = isFlat;
+        }
+
+        public PacketJoinGame(BinaryReader reader)
+            => throw new NotImplementedException();
+
         public void Write(BinaryWriter writer)
         {
             writer.Write(EntityID);

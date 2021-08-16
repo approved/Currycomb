@@ -1,14 +1,32 @@
 ﻿namespace Currycomb.Common.Game.Entity
 {
-    public class Abilities
+    public readonly struct Abilities
     {
-        public bool IsInvulnerable { get; set; } = false;
-        public bool IsFlying { get; set; } = false;
-        public bool CanFly { get; set; } = false;
-        public bool CanBuild { get; set; } = false;
-        public bool CanInstantBuild { get; set; } = false;
-        public float FlySpeed { get; set; } = 0.05f;
-        public float WalkSpeed { get; set; } = 1.0f;
+        public readonly bool IsInvulnerable;
+        public readonly bool IsFlying;
+        public readonly bool CanFly;
+        public readonly bool CanBuild;
+        public readonly bool CanInstantBuild;
+        public readonly float FlySpeed;
+        public readonly float WalkSpeed;
+
+        public Abilities(
+            bool isInvulnerable = false,
+            bool isFlying = false,
+            bool canFly = false,
+            bool canBuild = false,
+            bool canInstantBuild = false,
+            float flySpeed = 0.05f,
+            float walkSpeed = 1.0f)
+        {
+            IsInvulnerable = isInvulnerable;
+            IsFlying = isFlying;
+            CanFly = canFly;
+            CanBuild = canBuild;
+            CanInstantBuild = canInstantBuild;
+            FlySpeed = flySpeed;
+            WalkSpeed = walkSpeed;
+        }
 
         // TODO: Write NBT Serializer
     }

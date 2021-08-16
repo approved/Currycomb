@@ -3,9 +3,24 @@ using System.IO;
 
 namespace Currycomb.Common.Network.Game.Packets
 {
-    public record PacketResponse(String Json) : IGamePacket
+    [GamePacket(GamePacketId.Response)]
+    public readonly struct PacketResponse : IGamePacket
     {
+        public readonly String Json;
+
         public void Write(BinaryWriter stream)
-            => stream.Write(Json);
+        {
+            stream.Write(Json);
+        }
+
+        public PacketResponse(String json)
+        {
+            Json = json;
+        }
+
+        public PacketResponse(BinaryReader reader)
+        {
+            Json = reader.ReadString();
+        }
     }
 }

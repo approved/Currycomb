@@ -2,7 +2,7 @@
 
 namespace Currycomb.Common.Game
 {
-    public enum Difficulty
+    public enum Difficulty : sbyte
     {
         Invalid = -1,
         Peaceful = 0,

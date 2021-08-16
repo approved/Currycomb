@@ -1,20 +1,45 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.IO;
 
 namespace Currycomb.Common.Network.Game.Packets
 {
-    public record PacketClientMovePlayer(double XPos, double YPos, double ZPos, float Yaw, float Pitch, bool OnGround) : IGamePacket
+    [GamePacket(GamePacketId.ClientMovePlayer)]
+    public readonly struct PacketClientMovePlayer : IGamePacket
     {
-        //public async Task<PacketClientMovePlayerPos> ReadAsync(Stream stream) =>
-        //    new(
-        //        stream.ReadDouble(),
-        //        stream.ReadDouble(),
-        //        stream.ReadDouble(),
-        //        stream.ReadSingle(),
-        //        stream.ReadSingle(),
-        //        stream.ReadBoolean());
+        public readonly double XPos;
+        public readonly double YPos;
+        public readonly double ZPos;
+        public readonly float Yaw;
+        public readonly float Pitch;
+        public readonly bool OnGround;
+
+        public PacketClientMovePlayer(double xPos, double yPos, double zPos, float yaw, float pitch, bool onGround)
+        {
+            XPos = xPos;
+            YPos = yPos;
+            ZPos = zPos;
+            Yaw = yaw;
+            Pitch = pitch;
+            OnGround = onGround;
+        }
+
+        public PacketClientMovePlayer(BinaryReader reader)
+        {
+            XPos = reader.ReadDouble();
+            YPos = reader.ReadDouble();
+            ZPos = reader.ReadDouble();
+            Yaw = reader.ReadSingle();
+            Pitch = reader.ReadSingle();
+            OnGround = reader.ReadBoolean();
+        }
+
+        public void Write(BinaryWriter writer)
+        {
+            writer.Write(XPos);
+            writer.Write(YPos);
+            writer.Write(ZPos);
+            writer.Write(Yaw);
+            writer.Write(Pitch);
+            writer.Write(OnGround);
+        }
     }
 }

@@ -1,12 +1,25 @@
 using System.IO;
-using System.Threading.Tasks;
-using Currycomb.Common.Extensions;
 
 namespace Currycomb.Common.Network.Game.Packets
 {
-    public record PacketPong(long Timestamp) : IGamePacket
+    [GamePacket(GamePacketId.Pong)]
+    public readonly struct PacketPong : IGamePacket
     {
-        public static async Task<PacketPing> ReadAsync(Stream stream) => new(await stream.ReadLongAsync());
-        public void Write(BinaryWriter writer) => writer.Write(Timestamp);
+        public readonly long Timestamp;
+
+        public PacketPong(long timestamp)
+        {
+            Timestamp = timestamp;
+        }
+
+        public PacketPong(BinaryReader reader)
+        {
+            Timestamp = reader.ReadInt64();
+        }
+
+        public void Write(BinaryWriter writer)
+        {
+            writer.Write(Timestamp);
+        }
     }
 }

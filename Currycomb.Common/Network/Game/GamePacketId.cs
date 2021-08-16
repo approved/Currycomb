@@ -58,7 +58,7 @@ namespace Currycomb.Common.Network.Game
         ClientKeepAlive                = 0x0F | BoundTo.Server | State.Play,
         ClientLockDifficulty           = 0x10 | BoundTo.Server | State.Play,
         ClientMovePlayerPos            = 0x11 | BoundTo.Server | State.Play,
-        ClientMovePlayer               = 0x12 | BoundTo.Server | State.Play,
+        ClientMovePlayer               = 0x12 | BoundTo.Server | State.Play, // Also known as PlayerPositionAndRotation
         ClientMovePlayerRot            = 0x13 | BoundTo.Server | State.Play,
         ClientMovePlayerStatus         = 0x14 | BoundTo.Server | State.Play, // TODO: Add more descriptive comment
         ClientMoveVehicle              = 0x15 | BoundTo.Server | State.Play,
