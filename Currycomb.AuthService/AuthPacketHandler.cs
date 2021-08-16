@@ -60,11 +60,11 @@ namespace Currycomb.AuthService
             if (!new Span<byte>(c.VerifyToken).SequenceEqual(verify))
             {
                 Log.Error("VerifyToken mismatch");
-                // TODO: Kick the client, something went wrong.
+                await c.SendPacket(new PacketDisconnectLogin("VerifyToken mismatch"));
+                // TODO: Force kick the client, something went wrong.
             }
 
             // TODO: Authenticate with Mojang.
-            // TODO: Send internal packet with encryption key.
 
             await c.SendMetaPacket(new PacketSetAesKey(secret));
             await SendLoginSuccess(c);
