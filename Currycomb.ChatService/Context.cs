@@ -19,5 +19,8 @@ namespace Currycomb.ChatService
 
         public async Task SendPacket<T>(T packet) where T : IGamePacket
             => await _wps.SendAsync(false, new WrappedPacket(ClientId, packet.ToBytes()));
+
+        public async Task BroadcastPacket<T>(T packet) where T : IGamePacket
+            => await _wps.SendAsync(false, new WrappedPacket(Common.Constants.ClientId.BroadcastGuid, packet.ToBytes()));
     }
 }

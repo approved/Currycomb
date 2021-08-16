@@ -10,16 +10,14 @@ namespace Currycomb.Gateway.Routers
     public class PacketRouter
     {
         private readonly ClientCollection _clients;
-        private readonly PacketToClientRouter _toClient;
         private readonly PacketToMetaRouter _toMeta;
         private readonly PacketToServiceRouter _toService;
 
-        public PacketRouter(ClientCollection clients, PacketToServiceRouter toService, PacketToClientRouter toClient, PacketToMetaRouter toMeta)
+        public PacketRouter(ClientCollection clients, PacketToServiceRouter toService, PacketToMetaRouter toMeta)
         {
             _clients = clients;
 
             _toService = toService;
-            _toClient = toClient;
             _toMeta = toMeta;
         }
 
@@ -31,28 +29,28 @@ namespace Currycomb.Gateway.Routers
             Log.Debug("Routing packet from service.");
 
             WrappedPacket packet = wpc.Packet;
-            ClientConnection? client = _clients.GetClientById(packet.ClientId);
-
-            if (client == null)
-            {
-                Log.Warning("Ignoring meta packet for unknown client {@client}", packet.ClientId);
-                return;
-            }
 
             if (wpc.IsMetaPacket)
             {
-                Log.Information("Handling meta packet for client {@client}", packet.ClientId);
-                await _toMeta.HandlePacketAsync(client, packet);
+                if (_clients.GetClientById(packet.ClientId) is ClientConnection client)
+                {
+                    Log.Information("Handling meta packet for client {@client}", packet.ClientId);
+                    await _toMeta.HandlePacketAsync(client, packet);
 
-                Log.Information("Dispatching meta packet for client {@client}", packet.ClientId);
-                await _toService.HandleMetaAsync(packet);
+                    Log.Information("Dispatching meta packet for client {@client}", packet.ClientId);
+                    await _toService.HandleMetaAsync(packet);
 
-                Log.Information("Done with meta packet for client {@client}", packet.ClientId);
+                    Log.Information("Done with meta packet for client {@client}", packet.ClientId);
+                }
+                else
+                {
+                    Log.Warning("Ignoring packet for unknown client {@client}", packet.ClientId);
+                }
             }
             else
             {
                 Log.Information("Handling game packet for client {@client}", packet.ClientId);
-                await _toClient.HandlePacketAsync(client, packet);
+                await _clients.SendPacketAsync(packet.ClientId, packet);
             }
         }
     }

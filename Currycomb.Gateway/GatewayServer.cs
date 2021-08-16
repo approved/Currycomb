@@ -40,7 +40,6 @@ namespace Currycomb.Gateway
             PacketRouter router = new(
                 clients,
                 new(services),
-                new(),
                 new());
 
             Channel<WrappedPacketContainer> servicePackets = Channel.CreateUnbounded<WrappedPacketContainer>();

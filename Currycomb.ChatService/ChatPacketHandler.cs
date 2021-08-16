@@ -15,6 +15,6 @@ namespace Currycomb.ChatService
             .Build();
 
         private async Task PacketClientChat(Context c, PacketClientChat pkt)
-            => await c.SendPacket(new PacketChatMessage(JsonConvert.SerializeObject(new { text = pkt.Message }), 0, Guid.Empty));
+            => await c.BroadcastPacket(new PacketChatMessage(JsonConvert.SerializeObject(new { text = pkt.Message }), 0, Guid.Empty));
     }
 }

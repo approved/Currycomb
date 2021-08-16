@@ -7,6 +7,8 @@ using Currycomb.Common.Network;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using Currycomb.Common;
+using System.Linq;
 
 namespace Currycomb.Gateway.Clients
 {
@@ -50,13 +52,22 @@ namespace Currycomb.Gateway.Clients
         private void RemoveClient(Guid id)
         {
             log.Information("Removing client {@id}", id);
+
             if (!_clientDict.TryRemove(id, out var client))
-            {
                 log.Error("Could not remove client connection from dictionary, client does not exist.");
-            }
         }
 
         private Channel<ClientConnection> _newClient = Channel.CreateUnbounded<ClientConnection>();
+
+        public async Task SendPacketAsync(Guid client, WrappedPacket packet)
+        {
+            if (client == Constants.ClientId.BroadcastGuid)
+                await Task.WhenAll(_clientDict.Values.Select(x => x.SendPacketAsync(packet.Data)));
+            else if (_clientDict.TryGetValue(client, out var conn))
+                await conn.SendPacketAsync(packet.Data);
+
+            Log.Information("Attempted to send packet to unknown client: {@client}", client);
+        }
 
         public async Task ReadPacketsToChannel(ChannelWriter<(State, WrappedPacket)> writer, CancellationToken ct = default)
         {
