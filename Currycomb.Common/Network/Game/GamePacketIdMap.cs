@@ -25,6 +25,7 @@ namespace Currycomb.Common.Network.Game
             #endregion
 
             #region Login - ClientBound
+            { GamePacketId.DisconnectLogin, typeof(PacketDisconnectLogin) },
             { GamePacketId.ServerEncryption, typeof(PacketEncryptionRequest) },
             { GamePacketId.LoginSuccess, typeof(PacketLoginSuccess) },
             #endregion
@@ -61,7 +62,7 @@ namespace Currycomb.Common.Network.Game
 
             { GamePacketId.CommandList, typeof(PacketCommandList) },
 
-            { GamePacketId.DisconnectPlay, typeof(PacketDisconnect) },
+            { GamePacketId.DisconnectPlay, typeof(PacketDisconnectPlay) },
             { GamePacketId.EntityEvent, typeof(PacketEntityEvent) },
 
             { GamePacketId.ServerKeepAlive, typeof(PacketServerKeepAlive) },
