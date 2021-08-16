@@ -43,6 +43,7 @@ namespace Currycomb.Common.Network.Game
             #region Play - ServerBound
             { GamePacketId.ClientInformation, typeof(PacketClientInformation) },
 
+            { GamePacketId.ClientChat, typeof(PacketClientChat) },
             { GamePacketId.ClientCustomPayload, typeof(PacketClientCustomPayload) },
 
             { GamePacketId.ClientKeepAlive, typeof(PacketClientKeepAlive) },
@@ -60,6 +61,7 @@ namespace Currycomb.Common.Network.Game
 
             { GamePacketId.ServerCustomPayload, typeof(PacketServerCustomPayload) },
 
+            { GamePacketId.ChatMessage, typeof(PacketChatMessage) },
             { GamePacketId.CommandList, typeof(PacketCommandList) },
 
             { GamePacketId.DisconnectPlay, typeof(PacketDisconnectPlay) },

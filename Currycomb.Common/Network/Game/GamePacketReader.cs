@@ -14,6 +14,7 @@ namespace Currycomb.Common.Network.Game
             GamePacketId.LoginStart => PacketLoginStart.ReadAsync(stream).AsTask<PacketLoginStart, IGamePacket>(),
             GamePacketId.Request => PacketRequest.ReadAsync(stream).AsTask<PacketRequest, IGamePacket>(),
             GamePacketId.Ping => PacketPing.ReadAsync(stream).AsTask<PacketPing, IGamePacket>(),
+            GamePacketId.ClientChat => PacketClientChat.ReadAsync(stream).AsTask<PacketClientChat, IGamePacket>(),
             GamePacketId.ClientEncryption => PacketEncryptionResponse.ReadAsync(stream).AsTask<PacketEncryptionResponse, IGamePacket>(),
             GamePacketId.ClientKeepAlive => PacketClientKeepAlive.ReadAsync(stream).AsTask<PacketClientKeepAlive, IGamePacket>(),
             _ => throw new NotSupportedException($"Packet not yet supported: {id} ({id.ToRaw()} / 0x{id.ToRaw():X} | BoundTo.{id.BoundTo()} | State.{id.State()})"),
