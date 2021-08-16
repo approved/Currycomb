@@ -16,7 +16,7 @@ namespace Currycomb.Gateway
 
         object _servicesLock = new();
         ConcurrentDictionary<Guid, ServiceManager> _services = new();
-        Channel<ServiceInstance> _newService = Channel.CreateUnbounded<ServiceInstance>();
+        Channel<ServiceManager> _newService = Channel.CreateUnbounded<ServiceManager>();
 
         public ICollection<ServiceManager> Services => _services.Values;
 
@@ -32,7 +32,7 @@ namespace Currycomb.Gateway
 
             // Only "announce" a service if it's a new service.
             if (!existed)
-                await _newService.Writer.WriteAsync(service);
+                await _newService.Writer.WriteAsync(manager);
         }
 
         public async Task ReadPacketsToChannel(ChannelWriter<WrappedPacketContainer> writer, CancellationToken ct = default)
