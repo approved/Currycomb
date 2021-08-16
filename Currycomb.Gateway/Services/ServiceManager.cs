@@ -30,13 +30,28 @@ namespace Currycomb.Gateway
 
         public ServiceManager(Guid serviceId, ServiceInstance service) : this(serviceId)
             => AddServiceInstance(service);
+
         public string Name => GetActive()?.Service.Name ?? "Unknown.";
 
         public ValueTask AddServiceInstance(ServiceInstance service)
             => _pending.Writer.WriteAsync(service);
 
-        public ValueTask SendAsync(bool isMeta, WrappedPacket packet)
-            => GetActive()?.Service.SendAsync(isMeta, packet) ?? ValueTask.CompletedTask;
+        public async ValueTask SendAsync(bool isMeta, WrappedPacket packet)
+        {
+            while (GetActive() is Active active)
+            {
+                try
+                {
+                    await active.Service.SendAsync(isMeta, packet);
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    _log.Error(ex, "Failed to send packet to service {ServiceId}.", ServiceId);
+                    InvalidateActiveService(active.Id);
+                }
+            }
+        }
 
         public async Task ReadPacketsToChannelAsync(ChannelWriter<WrappedPacketContainer> channel, CancellationToken ct = default)
         {
@@ -103,11 +118,11 @@ namespace Currycomb.Gateway
             return await GetActiveAsync(ct);
         }
 
-        private void InvalidateActiveService()
+        private void InvalidateActiveService(Guid id)
         {
             lock (_activeLock)
             {
-                if (_active == null)
+                if (_active == null || _active.Id != id)
                     return;
 
                 _log.Warning("Invalidating {@service}", _active.Service);
@@ -127,7 +142,9 @@ namespace Currycomb.Gateway
                 if (_active == null)
                 {
                     CancellationTokenSource cts = new();
-                    return _active = new(Guid.NewGuid(), service, new(), cts, service.RunAsync(cts.Token));
+                    _active = new(Guid.NewGuid(), service, new(), cts, service.RunAsync(cts.Token));
+
+                    return _active;
                 }
             }
 
