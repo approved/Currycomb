@@ -52,7 +52,7 @@ namespace Currycomb.Gateway
                     }
 
                     WrappedPacket wp = wpc.Packet;
-                    if (wp.ClientId != Constants.ClientId.ToGatewayGuid)
+                    if (wp.ClientId != Constants.ClientIdToGateway)
                     {
                         Log.Error("Received packet not targeting the gateway (client was {clientId}) as first packet from {ip}.", wp.ClientId, client.Client.RemoteEndPoint);
                         continue;

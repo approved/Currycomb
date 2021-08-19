@@ -116,7 +116,7 @@ namespace Currycomb.Common.Network
         }
 
         public Task Announce(PacketAnnounce announce)
-            => this.SendWaitAsync(true, new WrappedPacket(Common.Constants.ClientId.ToGatewayGuid, new MetaPacket<PacketAnnounce>(new(MetaPacketIdMap<PacketAnnounce>.Id), announce).ToBytes()));
+            => this.SendWaitAsync(true, new WrappedPacket(Common.Constants.ClientIdToGateway, new MetaPacket<PacketAnnounce>(new(MetaPacketIdMap<PacketAnnounce>.Id), announce).ToBytes()));
 
         public async Task<byte> SendWaitAsync(bool isMeta, WrappedPacket packet)
         {

@@ -34,6 +34,8 @@ namespace Currycomb.Gateway.Clients
         public Guid Id { get; private set; } = Guid.NewGuid();
         public State State { get; private set; } = State.Handshake;
 
+        public bool ReceiveBroadcasts => State == State.Play;
+
         public void Dispose() => _netStream.Dispose();
 
         // TODO(minor): Might want to re-evaluate this.

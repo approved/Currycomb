@@ -1,5 +1,4 @@
-﻿using Currycomb.Common.Game;
-using Currycomb.Common.Network.Game;
+﻿using Currycomb.Common.Network.Game;
 using Currycomb.Common.Network.Game.Packets;
 using Newtonsoft.Json;
 using System;

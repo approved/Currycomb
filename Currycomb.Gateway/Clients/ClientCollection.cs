@@ -61,10 +61,16 @@ namespace Currycomb.Gateway.Clients
 
         public async Task SendPacketAsync(Guid client, WrappedPacket packet)
         {
-            if (client == Constants.ClientId.BroadcastGuid)
-                await Task.WhenAll(_clientDict.Values.Select(x => x.SendPacketAsync(packet.Data)));
+            if (client == Constants.ClientIdBroadcast)
+            {
+                IEnumerable<Task> tasks = _clientDict.Values.Where(x => x.ReceiveBroadcasts).Select(x => x.SendPacketAsync(packet.Data));
+                if (tasks.Any())
+                    await Task.WhenAll(tasks);
+            }
             else if (_clientDict.TryGetValue(client, out var conn))
+            {
                 await conn.SendPacketAsync(packet.Data);
+            }
 
             Log.Information("Attempted to send packet to unknown client: {@client}", client);
         }
