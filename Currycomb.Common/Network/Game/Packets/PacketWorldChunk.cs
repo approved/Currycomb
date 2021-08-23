@@ -9,7 +9,7 @@ namespace Currycomb.Common.Network.Game.Packets
     {
         public readonly int ChunkX;
         public readonly int ChunkZ;
-        public readonly long[] PrimaryBitMask;
+        public readonly long[] StripBitMask;
         public readonly Action<Nbt.CompoundWriter<Nbt.Cloak>> /* Compound */ Heightmaps;
         public readonly int[] Biomes;
         public readonly byte[] Data;
@@ -18,7 +18,7 @@ namespace Currycomb.Common.Network.Game.Packets
         public PacketWorldChunk(
             int chunkX,
             int chunkZ,
-            long[] primaryBitMask,
+            long[] stripBitMask,
             Action<Nbt.CompoundWriter<Nbt.Cloak>> /* Compound */ heightmaps,
             int[] biomes,
             byte[] data,
@@ -26,7 +26,7 @@ namespace Currycomb.Common.Network.Game.Packets
         {
             ChunkX = chunkX;
             ChunkZ = chunkZ;
-            PrimaryBitMask = primaryBitMask;
+            StripBitMask = stripBitMask;
             Heightmaps = heightmaps;
             Biomes = biomes;
             Data = data;
@@ -40,22 +40,26 @@ namespace Currycomb.Common.Network.Game.Packets
         {
             var nbt = Nbt.Writer.ToBinaryWriter(writer);
 
-            writer.Write(ChunkX);
-            writer.Write(ChunkZ);
-            writer.Write7BitEncodedInt(PrimaryBitMask.Length);
-            foreach (var entry in PrimaryBitMask)
-                writer.Write(entry);
+            // flip endianness of 32 bit int chunkx
+            var chunkXFlipped = (ChunkX << 24) | ((ChunkX & 0xFF00) << 8) | ((ChunkX & 0xFF0000) >> 8) | (ChunkX >> 24);
+            var chunkYFlipped = (ChunkZ << 24) | ((ChunkZ & 0xFF00) << 8) | ((ChunkZ & 0xFF0000) >> 8) | (ChunkZ >> 24);
+
+            writer.Write(chunkXFlipped);
+            writer.Write(chunkYFlipped);
+            writer.Write7BitEncodedInt(StripBitMask.Length);
+            for (var i = 0; i < StripBitMask.Length; i++)
+                writer.Write(StripBitMask[i]);
 
             nbt.Begin().WithCloak(Heightmaps).End().Finish();
 
             writer.Write7BitEncodedInt(Biomes.Length);
             foreach (var entry in Biomes)
-                writer.Write(entry);
+                writer.Write7BitEncodedInt(entry);
 
             writer.Write7BitEncodedInt(Data.Length);
             writer.Write(Data);
-            writer.Write7BitEncodedInt(BlockEntities.Length);
 
+            writer.Write7BitEncodedInt(BlockEntities.Length);
             foreach (var entry in BlockEntities)
                 nbt.Begin().WithCloak(entry).End().Finish();
         }

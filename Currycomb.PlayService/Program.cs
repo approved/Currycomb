@@ -12,6 +12,7 @@ using Microsoft.IO;
 using Currycomb.Common.Configuration;
 using Microsoft.Extensions.Configuration;
 using System.Linq;
+using Currycomb.Common.Network.Game.Packets;
 
 namespace Currycomb.PlayService
 {
@@ -25,6 +26,7 @@ namespace Currycomb.PlayService
             while (true)
             {
                 var packet = await outgoing.ReadAsync();
+                Log.Information("Actually sending packet: {packet}", packet);
                 await wps.SendAsync(false, packet);
             }
         }
@@ -32,7 +34,7 @@ namespace Currycomb.PlayService
         public static async Task HandleWrappedPacketStreamIncoming(
             GamePacketRouter<Context> gameRouter,
             MetaPacketRouter<Context> metaRouter,
-            ChannelWriter<IGameEvent> evt,
+            ChannelWriter<IMetaEvent> evt,
             WrappedPacketStream wps)
         {
             while (true)
@@ -104,13 +106,18 @@ namespace Currycomb.PlayService
             Channel<WrappedPacket> outgoing = Channel.CreateUnbounded<WrappedPacket>();
 
             CancellationTokenSource cts = new();
-            GameInstance game = new(MsManager, outgoing.Writer);
-            Thread gameThread = new(async () => await game.Run(cts.Token));
+            GameHandler game = new(MsManager, outgoing.Writer);
+            Thread gameThread = new(() => game.Run(cts.Token));
 
             gameThread.Start();
 
-            GamePacketRouter<Context> gameRouter = new PlayPacketHandler().Router;
             MetaPacketRouter<Context> metaRouter = new MetaPacketHandler().Router;
+            GamePacketRouter<Context> gameRouter = GamePacketRouter<Context>.New()
+                .On<PacketJoinGame>(game.HandleGamePacket)
+                .On<PacketSpawnPosition>(game.HandleGamePacket)
+                .On<PacketPlayerPosition>(game.HandleGamePacket)
+                .On<PacketClientKeepAlive>(game.HandleGamePacket)
+                .Build();
 
             while (true)
             {

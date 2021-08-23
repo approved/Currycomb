@@ -1,6 +1,8 @@
 using Currycomb.Common.Network.Game;
 using Currycomb.Common.Network.Meta;
 using Currycomb.Common.Network.Meta.Packets;
+using Currycomb.PlayService.ExternalEvent;
+using Serilog;
 using System.Threading.Tasks;
 
 namespace Currycomb.PlayService
@@ -14,10 +16,9 @@ namespace Currycomb.PlayService
 
         private async Task PacketSetState(Context c, PacketSetState pkt)
         {
+            Log.Debug("PacketSetState | {@pkt}", pkt);
             if (pkt.State == State.Play)
-            {
-                await c.Event.WriteAsync(new EvtPlayerConnected(c.ClientId));
-            }
+                await c.Event.WriteAsync(new ClientConnected(c.ClientId));
         }
     }
 }

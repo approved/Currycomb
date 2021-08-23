@@ -10,13 +10,13 @@ namespace Currycomb.PlayService
     public class Context : IGamePacketRouterContext, IMetaPacketRouterContext
     {
         public readonly Guid ClientId;
-        public readonly ChannelWriter<IGameEvent> Event;
+        public readonly ChannelWriter<IMetaEvent> Event;
 
         private WrappedPacketStream _wps;
 
         public State State => State.Play;
 
-        public Context(ChannelWriter<IGameEvent> evt, Guid clientId, WrappedPacketStream wps)
+        public Context(ChannelWriter<IMetaEvent> evt, Guid clientId, WrappedPacketStream wps)
             => (Event, ClientId, _wps) = (evt, clientId, wps);
 
         public async Task SendPacket<T>(T packet) where T : IGamePacket
