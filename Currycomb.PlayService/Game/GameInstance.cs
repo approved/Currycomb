@@ -42,6 +42,27 @@ namespace Currycomb.PlayService.Game
         public short BlockCount; // Number of non-air blocks
         public short[] Blocks; // 4096 = 16 * 16 * 16
 
+        public ChunkSection(Func<int, int, int, short> blockGenerator)
+        {
+            BlockCount = 0;
+            Blocks = new short[16 * 16 * 16];
+            for (int y = 0; y < 16; y++)
+            {
+                for (int z = 0; z < 16; z++)
+                {
+                    for (int x = 0; x < 16; x++)
+                    {
+                        short block = blockGenerator(x, y, z);
+                        if (block != 0)
+                        {
+                            BlockCount += 1;
+                            Blocks[y * 16 * 16 + z * 16 + x] = block;
+                        }
+                    }
+                }
+            }
+        }
+
         public ChunkSection(short block)
         {
             BlockCount = 16 * 16 * 16;
@@ -58,18 +79,25 @@ namespace Currycomb.PlayService.Game
             Blocks = blocks;
         }
 
-        public void Write(BinaryWriter writer)
+        public void Write(BinaryWriter writer, int[] palette)
         {
             writer.Write(BlockCount);
+            Log.Information("ChunkSection.Write: {blockcount}", BlockCount);
             writer.Write7BitEncodedInt(4); // Bits per block
 
-            writer.Write7BitEncodedInt(16); // Palette length
-            for (int i = 0; i < 16; i++)
-                writer.Write7BitEncodedInt(i); // Palette[i] = i (block id)
+            writer.Write7BitEncodedInt(palette.Length); // Palette length
+            Log.Information("ChunkSection.Write: {length}", palette.Length);
+            for (int i = 0; i < palette.Length; i++)
+                writer.Write7BitEncodedInt(palette[i]); // Palette[i] = i (block id)
 
-            writer.Write7BitEncodedInt(256); // Data Array Length
-            for (int i = 0; i < 256; i++)
-                writer.Write(0b0001_0010_0011_0100_0101_0110_0111_1000_1001_1010_1011_1100_1101_1110_1111);
+            writer.Write7BitEncodedInt(Blocks.Length); // Data Array Length
+            Log.Information("ChunkSection.Write: {length}", Blocks.Length);
+
+            for (int i = 0; i < 16; i++)
+                writer.Write(0x1111111111111111L); // A hack to set the first row of blocks in a chunk to idx 1 of the palette
+
+            for (int i = 0; i < Blocks.Length - 16; i++)
+                writer.Write(0);
         }
     }
 

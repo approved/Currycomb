@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.IO;
 using System.Text;
+using Currycomb.Common.Extensions;
 using Currycomb.Common.Game;
 using Currycomb.Common.Network.Game.Packets;
 using Currycomb.Common.Network.Game.Packets.Types;
@@ -122,8 +123,7 @@ namespace Currycomb.PlayService.Game.System
             //    Data: Array.Empty<byte>(),
             //    BlockEntities: Array.Empty<Action<Nbt.CompoundWriter<Nbt.Cloak>>>()));
 
-            var biomes = new int[1024];
-            biomes.AsSpan().Fill(0);
+            var biomes = new int[1024].Populate(1);
 
             var colBiomes = new byte[256];
             colBiomes.AsSpan().Fill(0);
@@ -135,16 +135,32 @@ namespace Currycomb.PlayService.Game.System
                     using MemoryStream ms = new();
                     using BinaryWriter bw = new(ms);
 
-                    new ChunkSection(1).Write(bw);
-                    new ChunkSection(2).Write(bw);
-                    new ChunkSection(3).Write(bw);
-                    new ChunkSection(4).Write(bw);
+                    new ChunkSection((x, y, z) =>
+                    {
+                        if (y == 0)
+                        {
+                            return 1;
+                        }
+                        return 0;
+                    }).Write(bw, new int[2] {0, 0x0E});
+
+                    //new ChunkSection(1).Write(bw);
+                    //new ChunkSection(2).Write(bw);
+                    //new ChunkSection(3).Write(bw);
+                    //new ChunkSection(4).Write(bw);
+                    long[] motionBlock = new long[37].Populate(0x1048241209048241);
+                    motionBlock[36] = 0x209048241;
+
+                    long[] worldSurface = new long[37].Populate(0x1048241209048241);
+                    worldSurface[36] = 0x209048241;
 
                     _pkt.Send(clientId, new PacketWorldChunk(
                         chunkX: x,
                         chunkZ: z,
-                        stripBitMask: new[] { 0b1111L },
-                        heightmaps: x => x.Compound(x => x.Write("MOTION_BLOCKING", new long[36] { 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2 })),
+                        stripBitMask: new[] { 0x1000000000000000L },
+                        heightmaps: x => x.
+                            Write("MOTION_BLOCKING", motionBlock).
+                            Write("WORLD_SURFACE", worldSurface),
                         biomes: biomes,
                         data: ms.ToArray(),
                         blockEntities: Array.Empty<Action<Nbt.CompoundWriter<Nbt.Cloak>>>()));
