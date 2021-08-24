@@ -142,7 +142,7 @@ namespace Currycomb.PlayService.Game.System
                             return 1;
                         }
                         return 0;
-                    }).Write(bw, new int[2] {0, 0x0E});
+                    }).Write(bw, new int[2] {0, 12});
 
                     //new ChunkSection(1).Write(bw);
                     //new ChunkSection(2).Write(bw);
@@ -192,6 +192,10 @@ namespace Currycomb.PlayService.Game.System
             _pkt.Send(clientId, new PacketBlockUpdate(new(1, 60, 0), 2));
             _pkt.Send(clientId, new PacketBlockUpdate(new(1, 60, 1), 2));
             _pkt.Send(clientId, new PacketBlockUpdate(new(0, 60, 1), 2));
+
+            _pkt.Send(clientId, new PacketSpawnMob(4, Guid.NewGuid(), EntityType.Zombie, 5, 65, 5, new(0), new(0), new(0), 0, 0, 0));
+
+            _pkt.Send(clientId, new PacketSetTitleText("{\"text\":\"Where is the Zombie?!\"}"));
 
             // _pkt.Send(clientId, new PacketDisconnectPlay(new Chat("ree")));
         }

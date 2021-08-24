@@ -17,8 +17,8 @@ namespace Currycomb.ChatService
 {
     public class Program
     {
-        private static readonly string LogFileName = $"logs/chat_service/play_{DateTime.Now:yyyy-MM-dd-HH-mm-ss}_{Environment.ProcessId}.txt";
-        private static readonly RecyclableMemoryStreamManager MsManager = new RecyclableMemoryStreamManager();
+        private static readonly string LogFileName = $"logs/chat_service/chat_{DateTime.Now:yyyy-MM-dd-HH-mm-ss}_{Environment.ProcessId}.txt";
+        private static readonly RecyclableMemoryStreamManager MsManager = new();
 
         public static async Task HandleWrappedPacketStreamOutgoing(ChannelReader<WrappedPacket> outgoing, WrappedPacketStream wps)
         {
@@ -62,7 +62,7 @@ namespace Currycomb.ChatService
                 .WriteTo.Async(x => x.File(LogFileName))
                 .CreateLogger();
 
-            Log.Information("PlayService starting");
+            Log.Information("ChatService starting");
             var env = Environment.GetEnvironmentVariable("CC_ENV") ?? "live";
             var configuration = new ConfigurationBuilder()
                 .SetBasePath(Environment.CurrentDirectory)
@@ -105,7 +105,7 @@ namespace Currycomb.ChatService
                 try
                 {
                     Log.Information("Attempting to connect to Gateway @ {gatewayHost}:{gatewayPort}", gateway.Host, gateway.Port);
-                    using TcpClient client = new TcpClient(gateway.Host, gateway.Port);
+                    using TcpClient client = new(gateway.Host, gateway.Port);
                     Log.Information("Connected");
 
                     WrappedPacketStream wps = new(client.GetStream(), MsManager);
