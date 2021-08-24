@@ -81,7 +81,7 @@ namespace Currycomb.PlayService.Game
 
         public void Write(BinaryWriter writer, int[] palette)
         {
-            writer.Write(BlockCount);
+            writer.Write((short)((BlockCount >> 8) + ((BlockCount & 0xFF) << 8))); // Swap Endianness of BlockCount
             Log.Information("ChunkSection.Write: {blockcount}", BlockCount);
             writer.Write7BitEncodedInt(4); // Bits per block
 
@@ -90,14 +90,14 @@ namespace Currycomb.PlayService.Game
             for (int i = 0; i < palette.Length; i++)
                 writer.Write7BitEncodedInt(palette[i]); // Palette[i] = i (block id)
 
-            writer.Write7BitEncodedInt(Blocks.Length); // Data Array Length
+            writer.Write7BitEncodedInt(Blocks.Length / 16); // Data Array Length
             Log.Information("ChunkSection.Write: {length}", Blocks.Length);
 
             for (int i = 0; i < 16; i++)
                 writer.Write(0x1111111111111111L); // A hack to set the first row of blocks in a chunk to idx 1 of the palette
 
             for (int i = 0; i < Blocks.Length - 16; i++)
-                writer.Write(0);
+                writer.Write(0L);
         }
     }
 
